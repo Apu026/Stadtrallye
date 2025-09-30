@@ -1,0 +1,17 @@
+.map-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.2; /* Karte ist ausgeblendet/transparent */
+  filter: blur(2px); /* Optional: leichter Unschärfe-Effekt */
+}
+
+.leaflet-container {
+  width: 100vw !important;
+  height: 100vh !important;
+  background: none !important;
+}
