@@ -1,4 +1,5 @@
 // src/components/Startseite.jsx
+import { MapContainer, TileLayer, useMap } from 'react-leaflet'
 import React, { useState } from 'react';
 import LoginModal from './LoginModal';
 import MapBackground from './MapBackground';
