@@ -1,0 +1,156 @@
+[
+  {
+    "id": 1,
+    "title": "Brandenburger Tor",
+    "coords": [52.516276, 13.377702],
+    "radiusMeters": 70,
+    "questions": [
+      {
+        "id": 1001,
+        "question": "Welches Reittier steht auf der Quadriga des Brandenburger Tors?",
+        "answers": ["Pferd", "Löwe", "Adler"],
+        "correctAnswerIndex": 0,
+        "userAnswers": []
+      },
+      {
+        "id": 1002,
+        "question": "An welchem Fluss liegt das Brandenburger Tor nahe?",
+        "answers": ["Spree", "Elbe", "Havel"],
+        "correctAnswerIndex": 0,
+        "userAnswers": []
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "title": "Reichstagsgebäude",
+    "coords": [52.518623, 13.376198],
+    "radiusMeters": 80,
+    "questions": [
+      {
+        "id": 2001,
+        "question": "In welchem Jahr wurde die Reichstagskuppel nach dem Wiederaufbau fertiggestellt?",
+        "answers": ["1999", "1989", "2005"],
+        "correctAnswerIndex": 0,
+        "userAnswers": []
+      },
+      {
+        "id": 2002,
+        "question": "Welche Farbe dominiert die Fassade des Reichstags?",
+        "answers": ["Beige/Steinfarben", "Rot", "Blau"],
+        "correctAnswerIndex": 0,
+        "userAnswers": []
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "title": "Alexanderplatz (Fernsehturm)",
+    "coords": [52.520816, 13.409417],
+    "radiusMeters": 100,
+    "questions": [
+      {
+        "id": 3001,
+        "question": "Wie hoch ist der Berliner Fernsehturm etwa?",
+        "answers": ["368 m", "250 m", "420 m"],
+        "correctAnswerIndex": 0,
+        "userAnswers": []
+      },
+      {
+        "id": 3002,
+        "question": "Auf welchem Platz steht der Fernsehturm?",
+        "answers": ["Alexanderplatz", "Potsdamer Platz", "Gendarmenmarkt"],
+        "correctAnswerIndex": 0,
+        "userAnswers": []
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "title": "Gendarmenmarkt",
+    "coords": [52.513845, 13.392398],
+    "radiusMeters": 70,
+    "questions": [
+      {
+        "id": 4001,
+        "question": "Welche beiden Kirchen stehen am Gendarmenmarkt?",
+        "answers": ["Deutscher Dom & Französischer Dom", "Mariendom & Nikolaikirche", "St. Hedwig & Dom"],
+        "correctAnswerIndex": 0,
+        "userAnswers": []
+      },
+      {
+        "id": 4002,
+        "question": "Wie heißt das Konzerthaus am Gendarmenmarkt?",
+        "answers": ["Konzerthaus Berlin", "Philharmonie", "Staatsoper"],
+        "correctAnswerIndex": 0,
+        "userAnswers": []
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "title": "Checkpoint Charlie",
+    "coords": [52.507507, 13.390373],
+    "radiusMeters": 60,
+    "questions": [
+      {
+        "id": 5001,
+        "question": "Checkpoint Charlie war ein Grenzübergang zwischen?",
+        "answers": ["Ost- und West-Berlin", "Berlin und Potsdam", "Deutschland und Frankreich"],
+        "correctAnswerIndex": 0,
+        "userAnswers": []
+      },
+      {
+        "id": 5002,
+        "question": "Wann fiel die Berliner Mauer?",
+        "answers": ["1989", "1990", "1985"],
+        "correctAnswerIndex": 0,
+        "userAnswers": []
+      }
+    ]
+  },
+  {
+    "id": 6,
+    "title": "Potsdamer Platz",
+    "coords": [52.509648, 13.375911],
+    "radiusMeters": 80,
+    "questions": [
+      {
+        "id": 6001,
+        "question": "Welches bekannte Gebäude steht am Potsdamer Platz?",
+        "answers": ["Sony Center", "Brandenburger Tor", "Fernsehturm"],
+        "correctAnswerIndex": 0,
+        "userAnswers": []
+      },
+      {
+        "id": 6002,
+        "question": "Wie viele Kinos befinden sich ungefähr im Sony Center?",
+        "answers": ["10", "5", "15"],
+        "correctAnswerIndex": 0,
+        "userAnswers": []
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "title": "Berliner Dom",
+    "coords": [52.519171, 13.401058],
+    "radiusMeters": 60,
+    "questions": [
+      {
+        "id": 7001,
+        "question": "Welches Baujahr hat der Berliner Dom?",
+        "answers": ["1905", "1890", "1915"],
+        "correctAnswerIndex": 0,
+        "userAnswers": []
+      },
+      {
+        "id": 7002,
+        "question": "An welchem Fluss liegt der Berliner Dom?",
+        "answers": ["Spree", "Havel", "Elbe"],
+        "correctAnswerIndex": 0,
+        "userAnswers": []
+      }
+    ]
+  }
+]
