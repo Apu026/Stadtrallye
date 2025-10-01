@@ -1,0 +1,170 @@
+.endseite-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.endseite-map-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.endseite-content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  max-width: 700px;
+  max-height: 700px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 2vh;
+  padding: 2vh 2vw;
+  overflow: hidden;
+}
+
+.endseite-team-select {
+  position: fixed; /* statt absolute */
+  top: 2vh;
+  right: 2vw;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border-radius: 1vw;
+  padding: 1vw 2vw;
+  font-size: clamp(0.9rem, 1.2vw, 1.2rem);
+  display: flex;
+  align-items: center;
+  gap: 0.5vw;
+  z-index: 100;
+}
+
+.endseite-headline {
+  font-size: clamp(1.2rem, 4vw, 2.5rem);
+  font-weight: bold;
+  text-align: center;
+  color: #222;
+  margin-bottom: 2vh;
+  margin-top: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.endseite-leaderboard {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 2vh 2vw;
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+  /* Keine Scrollbar mehr */
+  overflow: visible;
+}
+
+.endseite-user-entry {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 2vh 2vw;
+  flex-shrink: 0;
+}
+
+.endseite-leaderboard h2,
+.endseite-user-entry h2 {
+  font-size: clamp(1rem, 2vw, 1.5rem);
+  font-weight: 600;
+  margin-bottom: 1vh;
+  text-align: center;
+  color: #555;
+  width: 100%;
+  overflow-wrap: break-word;
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
+.endseite-leaderboard ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5vh;
+}
+
+.endseite-leaderboard-item {
+  display: flex;
+  flex-direction: row; /* Teamname und Punkte nebeneinander */
+  align-items: center;
+  justify-content: space-between;
+  padding: 1vh 1vw;
+  border-radius: 1vw;
+  margin-bottom: 0;
+  background: white;
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
+  width: 100%;
+  text-align: left;
+}
+
+.endseite-leaderboard-item.active {
+  background: #cce3ff;
+  font-weight: bold;
+}
+
+.endseite-user-entry p {
+  color: #444;
+  margin-bottom: 0.5vh;
+  font-size: clamp(1rem, 1.2vw, 1.2rem);
+  width: 100%;
+  text-align: center;
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 700px) {
+  .endseite-content {
+    width: 98vw;
+    max-height: 98vh;
+    height: 98vh;
+    padding: 2vh 1vw;
+    gap: 1vh;
+  }
+  .endseite-headline {
+    font-size: clamp(1rem, 6vw, 1.5rem);
+    margin-bottom: 1vh;
+  }
+  .endseite-team-select {
+    font-size: clamp(0.8rem, 2vw, 1rem);
+    padding: 0.5vw 1vw;
+    top: 1vw;
+    right: 1vw;
+  }
+}
