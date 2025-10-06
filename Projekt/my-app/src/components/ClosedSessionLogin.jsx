@@ -8,11 +8,29 @@ const ClosedSessionLogin = ({ onLogin }) => {
   const [password, setPassword] = useState(''); // Eingabefeld für Passwort
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => { // Funktion zum Absenden des Formulars
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => { // Funktion zum Absenden des Formulars
     e.preventDefault(); // Verhindert dass, die Seite neu geladen wird
-    // Dummy-Login, akzeptiert alles
-    onLogin(); 
-    navigate('/startseite'); // Wechsel zur Startseite
+    setError('');
+    try {
+      const response = await fetch('http://localhost:5000/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await response.json();
+      if (response.ok && data.success && data.role === 'closed') {
+        if (onLogin) onLogin(data);
+        navigate('/startseite');
+      } else if (response.ok && data.success) {
+        setError('Nur für Authorisierte Benutzer erlaubt!');
+      } else {
+        setError(data.error || 'Login fehlgeschlagen');
+      }
+    } catch (err) {
+      setError('Server nicht erreichbar');
+    }
   };
 
   return (
@@ -20,6 +38,7 @@ const ClosedSessionLogin = ({ onLogin }) => {
       <div className="closed-session-login-box">
         <h2 className="closed-session-login-title">Login</h2>
         <form onSubmit={handleSubmit} className="closed-session-login-form">
+          {error && <div className="closed-session-login-error">{error}</div>}
           <input
             type="text"
             placeholder="Benutzername"
