@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import './LoginModal.css';
-// Entferne useNavigate und Navigation
-const LoginModal = ({ onClose }) => {
+import { useNavigate } from 'react-router-dom';
+const LoginModal = ({ onClose, onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -17,8 +18,14 @@ const LoginModal = ({ onClose }) => {
         body: JSON.stringify({ username, password })
       });
       const data = await response.json();
-      if (response.ok && data.success && (data.role === 'admin' || data.role === 'superadmin')) {
-        onClose(); // oder hier Weiterleitung/Admin-Logik
+      if (response.ok && data.success && data.role === 'superadmin') {
+        if (onLogin) onLogin(data);
+        onClose();
+        navigate('/superadmin');
+      } else if (response.ok && data.success && (data.role === 'admin')) {
+        if (onLogin) onLogin(data);
+        onClose();
+        // Hier ggf. navigate('/admin');
       } else if (response.ok && data.success) {
         setError('Nur für Authorisierte Benutzer erlaubt!');
       } else {

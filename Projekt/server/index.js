@@ -18,6 +18,17 @@ const pool = new Pool({
   port: process.env.PGPORT ? parseInt(process.env.PGPORT) : 5432,
 });
 
+// Alle Nutzer abrufen (Superadmin-API)
+app.get('/api/users', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, username, role FROM users ORDER BY username ASC');
+    res.json({ users: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Fehler beim Laden der Nutzer' });
+  }
+});
+
 // Test-Route
 app.get('/', (req, res) => {
   res.send('Backend läuft!');

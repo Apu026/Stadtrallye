@@ -7,13 +7,14 @@ import loginIcon from '../assets/login.svg';
 
 const Startseite = () => {
   const [showLogin, setShowLogin] = useState(false);
+
   return (
     <>
       <MapBackground />
       <span className="login-icon" aria-label="Login" onClick={() => setShowLogin(true)} style={{ cursor: 'pointer' }}>
-  <img src={loginIcon} alt="Login" style={{ width: 40, height: 40 }} />
+        <img src={loginIcon} alt="Login" style={{ width: 40, height: 40 }} />
       </span>
-      {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
+  {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
       <div>
         <h2>Willkommen zur Stadtrallye!</h2>
         <p>Starte hier deine Rallye und entdecke die Stadt.</p>
