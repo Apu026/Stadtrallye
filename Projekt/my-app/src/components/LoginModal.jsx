@@ -25,7 +25,7 @@ const LoginModal = ({ onClose, onLogin }) => {
       } else if (response.ok && data.success && (data.role === 'admin')) {
         if (onLogin) onLogin(data);
         onClose();
-        // Hier ggf. navigate('/admin');
+        navigate('/admin');
       } else if (response.ok && data.success) {
         setError('Nur für Authorisierte Benutzer erlaubt!');
       } else {
