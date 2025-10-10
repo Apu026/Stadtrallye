@@ -73,7 +73,6 @@ pool.query(`
     status VARCHAR(16) NOT NULL DEFAULT 'offen',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     closed_at TIMESTAMP,
-    admin_id INTEGER,
     rallye_id INTEGER
   )
 `).catch(err => console.error('Fehler beim Anlegen der Tabelle rooms:', err));
@@ -99,13 +98,13 @@ app.post('/api/rooms', async (req, res) => {
       const check = await pool.query('SELECT 1 FROM rooms WHERE code = $1', [code]);
       exists = check.rows.length > 0;
     }
-    const { admin_id, rallye_id } = req.body;
+    const { rallye_id } = req.body;
     if (!rallye_id) {
       return res.status(400).json({ error: 'rallye_id ist erforderlich' });
     }
     const result = await pool.query(
-      'INSERT INTO rooms (code, status, admin_id, rallye_id) VALUES ($1, $2, $3, $4) RETURNING *',
-      [code, 'offen', admin_id || null, rallye_id]
+      'INSERT INTO rooms (code, status, rallye_id) VALUES ($1, $2, $3) RETURNING *',
+      [code, 'offen', rallye_id]
     );
     res.json({ room: result.rows[0] });
   } catch (err) {
@@ -113,6 +112,7 @@ app.post('/api/rooms', async (req, res) => {
     res.status(500).json({ error: 'Fehler beim Erstellen des Raums' });
   }
 });
+
 
 // Gibt alle offenen Räume zurück
 app.get('/api/rooms', async (req, res) => {
@@ -122,6 +122,17 @@ app.get('/api/rooms', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Fehler beim Laden der Räume' });
+  }
+});
+
+// Gibt alle Räume zurück (offen und geschlossen)
+app.get('/api/rooms/all', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM rooms ORDER BY created_at DESC');
+    res.json({ rooms: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Fehler beim Laden aller Räume' });
   }
 });
 
@@ -141,6 +152,19 @@ app.patch('/api/rooms/:id/close', async (req, res) => {
   }
 });
 
+
+// Löscht einen Raum anhand der ID
+app.delete('/api/rooms/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query('DELETE FROM rooms WHERE id = $1 RETURNING *', [id]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Raum nicht gefunden' });
+    res.json({ success: true, deletedRoom: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Fehler beim Löschen des Raums' });
+  }
+});
 
 
 

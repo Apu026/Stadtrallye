@@ -6,7 +6,9 @@ import './AdminPage.css';
 // Admin-Oberfläche für Räume und Rallyes
 const AdminPage = () => {
   // State für Räume, Rallyes, Auswahl, Status und Meldungen
-  const [rooms, setRooms] = useState([]);         // Liste der offenen Räume
+  const [rooms, setRooms] = useState([]);         // Alle Räume
+  const [openRooms, setOpenRooms] = useState([]); // Offene Räume
+  const [closedRooms, setClosedRooms] = useState([]); // Geschlossene Räume
   const [rallyes, setRallyes] = useState([]);     // Liste der Rallyes
   const [rallyeId, setRallyeId] = useState('');   // Ausgewählte Rallye
   const [creating, setCreating] = useState(false);// Wird gerade ein Raum erstellt?
@@ -25,12 +27,15 @@ const AdminPage = () => {
     }
   };
 
-  // Holt alle offenen Räume vom Server
+
+  // Holt alle Räume (offen und geschlossen) vom Server
   const fetchRooms = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/rooms');
+      const res = await fetch('http://localhost:5000/api/rooms/all');
       const data = await res.json();
       setRooms(data.rooms || []);
+      setOpenRooms((data.rooms || []).filter(r => r.status === 'offen'));
+      setClosedRooms((data.rooms || []).filter(r => r.status === 'geschlossen'));
     } catch (err) {
       setError('Fehler beim Laden der Räume');
     }
@@ -56,7 +61,7 @@ const AdminPage = () => {
       const data = await res.json();
       if (res.ok && data.room) {
         setSuccess(`Raum erstellt! Code: ${data.room.code}`);
-        setRooms([data.room, ...rooms]);
+        fetchRooms(); // Nach dem Erstellen neu laden
       } else {
         setError(data.error || 'Fehler beim Erstellen des Raums');
       }
@@ -76,10 +81,31 @@ const AdminPage = () => {
       });
       const data = await res.json();
       if (res.ok && data.room) {
-        setRooms(rooms.filter(r => r.id !== roomId));
+        fetchRooms(); // Nach dem Schließen neu laden
         setSuccess('Raum geschlossen');
       } else {
         setError(data.error || 'Fehler beim Schließen des Raums');
+      }
+    } catch (err) {
+      setError('Server nicht erreichbar');
+    }
+  };
+
+  // Löscht einen Raum endgültig
+  const handleDeleteRoom = async (roomId) => {
+    setError('');
+    setSuccess('');
+    if (!window.confirm('Soll dieser Raum wirklich gelöscht werden?')) return;
+    try {
+      const res = await fetch(`http://localhost:5000/api/rooms/${roomId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        fetchRooms(); // Nach dem Löschen neu laden
+        setSuccess('Raum gelöscht');
+      } else {
+        setError(data.error || 'Fehler beim Löschen des Raums');
       }
     } catch (err) {
       setError('Server nicht erreichbar');
@@ -114,9 +140,9 @@ const AdminPage = () => {
       {/* Liste der offenen Räume */}
       <div style={{ marginTop: 36 }}>
         <h3>Offene Räume</h3>
-        {rooms.length === 0 && <div>Keine offenen Räume.</div>}
+        {openRooms.length === 0 && <div>Keine offenen Räume.</div>}
         <ul style={{ listStyle: 'none', padding: 0 }}>
-          {rooms.map(room => (
+          {openRooms.map(room => (
             <li key={room.id} style={{ marginBottom: 18, background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #0001', padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
               {/* Raumdaten */}
               <span style={{ fontWeight: 600, fontSize: 18 }}>Code: {room.code}</span>
@@ -125,6 +151,30 @@ const AdminPage = () => {
               {/* Button zum Schließen */}
               <button style={{ marginLeft: 24, background: '#e53935', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 16px', cursor: 'pointer', fontSize: 15 }} onClick={() => handleCloseRoom(room.id)}>
                 Raum schließen
+              </button>
+              {/* Button zum Löschen */}
+              <button style={{ marginLeft: 12, background: '#888', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 16px', cursor: 'pointer', fontSize: 15 }} onClick={() => handleDeleteRoom(room.id)}>
+                Raum löschen
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Liste der geschlossenen Räume */}
+      <div style={{ marginTop: 36 }}>
+        <h3>Geschlossene Räume</h3>
+        {closedRooms.length === 0 && <div>Keine geschlossenen Räume.</div>}
+        <ul style={{ listStyle: 'none', padding: 0 }}>
+          {closedRooms.map(room => (
+            <li key={room.id} style={{ marginBottom: 18, background: '#f3f3f3', borderRadius: 8, boxShadow: '0 2px 8px #0001', padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', opacity: 0.7 }}>
+              {/* Raumdaten */}
+              <span style={{ fontWeight: 600, fontSize: 18 }}>Code: {room.code}</span>
+              <span style={{ marginLeft: 16, color: '#555', fontSize: 15 }}>Status: {room.status}</span>
+              <span style={{ marginLeft: 16, color: '#888', fontSize: 15 }}>Rallye-ID: {room.rallye_id}</span>
+              {/* Button zum Löschen */}
+              <button style={{ marginLeft: 24, background: '#888', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 16px', cursor: 'pointer', fontSize: 15 }} onClick={() => handleDeleteRoom(room.id)}>
+                Raum löschen
               </button>
             </li>
           ))}
