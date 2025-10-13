@@ -1,0 +1,61 @@
+/* Styles für die Gruppenauswahl-Seite */
+.groupselect-bg {
+  width: 100vw;
+  min-height: 100vh;
+  margin: 0;
+  padding: 32px 2vw;
+  box-sizing: border-box;
+  background: #f7f7f7;
+}
+
+.groupselect-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin: 40px 0;
+  width: 100%;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+  justify-content: center;
+}
+
+.groupselect-btn {
+  min-width: 90px;
+  max-width: 320px;
+  min-height: 60px;
+  font-size: 22px;
+  border-radius: 18px;
+  border: 1px solid #ccc;
+  background: #fff;
+  color: #222;
+  cursor: pointer;
+  font-weight: 500;
+  box-shadow: 0 2px 8px #0002;
+  opacity: 1;
+  transition: all 0.18s;
+  outline: none;
+  letter-spacing: 1px;
+  margin: 0;
+  padding: 0 18px;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.groupselect-btn.selected {
+  border: 3px solid #1976d2;
+  background: #e3f2fd;
+  font-weight: 700;
+  box-shadow: 0 0 0 4px #1976d2AA;
+  outline: 2px solid #1976d2;
+}
+
+.groupselect-btn.taken {
+  background: #eee;
+  color: #aaa;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
