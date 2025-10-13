@@ -64,19 +64,6 @@ function generateRoomCode(length = 6) {
   return code;
 }
 
-
-// Räume-Tabelle anlegen, falls sie noch nicht existiert (später wieder entfernen)
-pool.query(`
-  CREATE TABLE IF NOT EXISTS rooms (
-    id SERIAL PRIMARY KEY,
-    code VARCHAR(12) UNIQUE NOT NULL,
-    status VARCHAR(16) NOT NULL DEFAULT 'offen',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    closed_at TIMESTAMP,
-    rallye_id INTEGER
-  )
-`).catch(err => console.error('Fehler beim Anlegen der Tabelle rooms:', err));
-
 // Gibt alle Rallyes zurück (für das Frontend)
 app.get('/api/rallyes', async (req, res) => {
   try {
@@ -239,6 +226,22 @@ app.post('/api/rooms/:roomCode/join-group', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Fehler beim Beitreten zur Gruppe' });
+  }
+});
+
+// Setzt den Status eines Raums auf 'gestartet'
+app.patch('/api/rooms/:id/start', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(
+      'UPDATE rooms SET status = $1 WHERE id = $2 RETURNING *',
+      ['gestartet', id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Raum nicht gefunden' });
+    res.json({ room: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Fehler beim Starten der Rallye' });
   }
 });
 

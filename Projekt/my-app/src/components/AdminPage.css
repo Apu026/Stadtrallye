@@ -1,3 +1,25 @@
+/* Aktions-Buttons für Räume */
+.admin-page-action-btn {
+  margin-left: 12px;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+.admin-page-start-btn {
+  background: #083163;
+  margin-left: 24px;
+}
+.admin-page-close-btn {
+  background: #e53935;
+}
+.admin-page-delete-btn {
+  background: #888;
+}
 .admin-page-container {
   padding: 24px;
   background: #f7f7fa;

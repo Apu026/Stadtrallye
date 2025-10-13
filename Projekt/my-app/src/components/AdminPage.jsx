@@ -1,4 +1,3 @@
-
 // React und CSS importieren
 import React, { useState, useEffect } from 'react';
 import './AdminPage.css';
@@ -14,6 +13,7 @@ const AdminPage = () => {
   const [creating, setCreating] = useState(false);// Wird gerade ein Raum erstellt?
   const [error, setError] = useState('');         // Fehlermeldung
   const [success, setSuccess] = useState('');     // Erfolgsmeldung
+  const [startedRooms, setStartedRooms] = useState([]); // Gestartete Räume
 
   // Holt alle Rallyes vom Server
   const fetchRallyes = async () => {
@@ -36,6 +36,7 @@ const AdminPage = () => {
       setRooms(data.rooms || []);
       setOpenRooms((data.rooms || []).filter(r => r.status === 'offen'));
       setClosedRooms((data.rooms || []).filter(r => r.status === 'geschlossen'));
+      setStartedRooms((data.rooms || []).filter(r => r.status === 'gestartet'));
     } catch (err) {
       setError('Fehler beim Laden der Räume');
     }
@@ -112,6 +113,25 @@ const AdminPage = () => {
     }
   };
 
+  // Startet eine Rallye (setzt Status auf 'gestartet')
+  const handleStartRoom = async (roomId) => {
+    setError('');
+    setSuccess('');
+    try {
+      const res = await fetch(`http://localhost:5000/api/rooms/${roomId}/start`, {
+        method: 'PATCH',
+      });
+      const data = await res.json();
+      if (res.ok && data.room) {
+        fetchRooms(); // Nach dem Starten neu laden
+        setSuccess('Rallye gestartet');
+      } else {
+        setError(data.error || 'Fehler beim Starten der Rallye');
+      }
+    } catch (err) {
+      setError('Server nicht erreichbar');
+    }
+  };  
 
   // Das UI der Admin-Seite
   return (
@@ -147,13 +167,19 @@ const AdminPage = () => {
               {/* Raumdaten */}
               <span style={{ fontWeight: 600, fontSize: 18 }}>Code: {room.code}</span>
               <span style={{ marginLeft: 16, color: '#555', fontSize: 15 }}>Status: {room.status}</span>
-              <span style={{ marginLeft: 16, color: '#888', fontSize: 15 }}>Rallye-ID: {room.rallye_id}</span>
+              <span style={{ marginLeft: 16, color: '#888', fontSize: 15 }}>
+                Rallye: {rallyes.find(r => r.id === room.rallye_id)?.name || room.rallye_id}
+              </span>
+              {/* Button zum Starten */}
+              <button className="admin-page-action-btn admin-page-start-btn" onClick={() => handleStartRoom(room.id)}>
+                Rallye starten
+              </button>
               {/* Button zum Schließen */}
-              <button style={{ marginLeft: 24, background: '#e53935', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 16px', cursor: 'pointer', fontSize: 15 }} onClick={() => handleCloseRoom(room.id)}>
+              <button className="admin-page-action-btn admin-page-close-btn" onClick={() => handleCloseRoom(room.id)}>
                 Raum schließen
               </button>
               {/* Button zum Löschen */}
-              <button style={{ marginLeft: 12, background: '#888', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 16px', cursor: 'pointer', fontSize: 15 }} onClick={() => handleDeleteRoom(room.id)}>
+              <button className="admin-page-action-btn admin-page-delete-btn" onClick={() => handleDeleteRoom(room.id)}>
                 Raum löschen
               </button>
             </li>
@@ -171,9 +197,33 @@ const AdminPage = () => {
               {/* Raumdaten */}
               <span style={{ fontWeight: 600, fontSize: 18 }}>Code: {room.code}</span>
               <span style={{ marginLeft: 16, color: '#555', fontSize: 15 }}>Status: {room.status}</span>
-              <span style={{ marginLeft: 16, color: '#888', fontSize: 15 }}>Rallye-ID: {room.rallye_id}</span>
+              <span style={{ marginLeft: 16, color: '#888', fontSize: 15 }}>
+                Rallye: {rallyes.find(r => r.id === room.rallye_id)?.name || room.rallye_id}
+              </span>
               {/* Button zum Löschen */}
-              <button style={{ marginLeft: 24, background: '#888', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 16px', cursor: 'pointer', fontSize: 15 }} onClick={() => handleDeleteRoom(room.id)}>
+              <button className="admin-page-action-btn admin-page-delete-btn" onClick={() => handleDeleteRoom(room.id)}>
+                Raum löschen
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Liste der gestarteten Räume */}
+      <div style={{ marginTop: 36 }}>
+        <h3>Gestartete Räume</h3>
+        {startedRooms.length === 0 && <div>Keine gestarteten Räume.</div>}
+        <ul style={{ listStyle: 'none', padding: 0 }}>
+          {startedRooms.map(room => (
+            <li key={room.id} style={{ marginBottom: 18, background: '#e6f7ff', borderRadius: 8, boxShadow: '0 2px 8px #0001', padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', opacity: 0.95 }}>
+              {/* Raumdaten */}
+              <span style={{ fontWeight: 600, fontSize: 18 }}>Code: {room.code}</span>
+              <span style={{ marginLeft: 16, color: '#555', fontSize: 15 }}>Status: {room.status}</span>
+              <span style={{ marginLeft: 16, color: '#888', fontSize: 15 }}>
+                Rallye: {rallyes.find(r => r.id === room.rallye_id)?.name || room.rallye_id}
+              </span>
+              {/* Button zum Löschen */}
+              <button className="admin-page-action-btn admin-page-delete-btn" onClick={() => handleDeleteRoom(room.id)}>
                 Raum löschen
               </button>
             </li>
