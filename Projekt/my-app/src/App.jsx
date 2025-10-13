@@ -2,7 +2,7 @@ import './App.css';
 import React from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import Startseite from './components/Startseite';
-import Endseite from './components/Endseite';
+import Endseite from './components/Endseite/Endseite';
 
 function StartseiteWithRouting() {
   const navigate = useNavigate();
