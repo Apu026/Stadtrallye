@@ -1,0 +1,46 @@
+/* ...existing code... */
+:root { --panel-width: 360px; }
+
+.admin-shell {
+  position: relative;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* full-screen map behind everything */
+#admin-map-root {
+  position: fixed !important;
+  inset: 0;
+  z-index: 0;
+}
+
+/* overlay panel on right */
+.admin-panel {
+  position: fixed;
+  right: 12px;
+  top: 12px;
+  width: var(--panel-width);
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+  background: rgba(255,255,255,0.98);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+  border-radius: 8px;
+  padding: 12px;
+  z-index: 1001;
+  pointer-events: auto;
+}
+
+/* list */
+.poi-list { margin-top: 8px; display:flex; flex-direction:column; gap:6px; }
+.poi-item { display:flex; justify-content:space-between; align-items:center; padding:6px; border-radius:6px; background: rgba(0,0,0,0.03); }
+.poi-item.active { background: rgba(0,120,215,0.08); }
+.poi-actions button { margin-left:6px; }
+.small { font-size: 12px; color:#666; }
+.muted { color:#666; padding:8px 0; }
+/* inputs */
+.admin-panel label { display:block; margin-top:8px; font-size:13px; }
+.admin-panel input { width: 100%; padding:6px; margin-top:4px; box-sizing:border-box; }
+/* ensure map tiles do not block panel clicks */
+.leaflet-container { z-index: 0; }
+/* ...existing code... */
