@@ -4,19 +4,15 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const { Pool } = require('pg');
 const bcrypt = require('bcrypt');
-
 // .env-Datei laden (DB-Login)
 dotenv.config();
+
 
 // Express-App initialisieren
 const app = express();
 app.use(cors()); // CORS für API erlauben
 app.use(express.json()); // JSON-Body-Parsing
 
-// Basisroute von der Spielseite
-app.get('/', (req, res) => {
-  res.send('Backend läuft!');
-});
 
 // Verbindung zur PostgreSQL-Datenbank herstellen
 const pool = new Pool({
@@ -27,8 +23,7 @@ const pool = new Pool({
   port: process.env.PGPORT ? parseInt(process.env.PGPORT) : 5432, //Fallback auf 5432 wenn PGPORT nicht gesetzt ist
 });
 
-// ==================== Nutzerverwaltung ====================
-// Gibt alle Nutzer zurück
+// Gibt alle Nutzer zurück (Nutzerverwaltung)
 app.get('/api/users', async (req, res) => {
   try {
     const result = await pool.query('SELECT id, username, role FROM users ORDER BY username ASC');
@@ -38,6 +33,7 @@ app.get('/api/users', async (req, res) => {
     res.status(500).json({ error: 'Fehler beim Laden der Nutzer' });
   }
 });
+
 
 // Login-Route für Nutzer
 app.post('/api/login', async (req, res) => {
@@ -57,7 +53,8 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// ==================== Hilfsfunktionen ====================
+
+// Hilfsfunktion: Erstellt einen zufälligen Raum-Code (Für Spieler)
 function generateRoomCode(length = 6) {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
@@ -67,8 +64,7 @@ function generateRoomCode(length = 6) {
   return code;
 }
 
-
-// Gibt alle Rallyes zurück
+// Gibt alle Rallyes zurück (für das Frontend)
 app.get('/api/rallyes', async (req, res) => {
   try {
     const result = await pool.query('SELECT id, name FROM rallyes ORDER BY name ASC');
@@ -90,8 +86,9 @@ app.post('/api/rooms', async (req, res) => {
       exists = check.rows.length > 0;
     }
     const { rallye_id } = req.body;
-    if (!rallye_id) return res.status(400).json({ error: 'rallye_id ist erforderlich' });
-
+    if (!rallye_id) {
+      return res.status(400).json({ error: 'rallye_id ist erforderlich' });
+    }
     const result = await pool.query(
       'INSERT INTO rooms (code, status, rallye_id) VALUES ($1, $2, $3) RETURNING *',
       [code, 'offen', rallye_id]
@@ -102,6 +99,7 @@ app.post('/api/rooms', async (req, res) => {
     res.status(500).json({ error: 'Fehler beim Erstellen des Raums' });
   }
 });
+
 
 // Gibt alle offenen Räume zurück
 app.get('/api/rooms', async (req, res) => {
@@ -114,7 +112,7 @@ app.get('/api/rooms', async (req, res) => {
   }
 });
 
-// Gibt alle Räume zurück (offen + geschlossen)
+// Gibt alle Räume zurück (offen und geschlossen)
 app.get('/api/rooms/all', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM rooms ORDER BY created_at DESC');
@@ -125,7 +123,7 @@ app.get('/api/rooms/all', async (req, res) => {
   }
 });
 
-// Schließt einen Raum
+// Schließt einen Raum (Status auf "geschlossen", closed_at setzen)
 app.patch('/api/rooms/:id/close', async (req, res) => {
   try {
     const { id } = req.params;
@@ -141,7 +139,8 @@ app.patch('/api/rooms/:id/close', async (req, res) => {
   }
 });
 
-// Löscht einen Raum
+
+// Löscht einen Raum anhand der ID
 app.delete('/api/rooms/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -154,7 +153,7 @@ app.delete('/api/rooms/:id', async (req, res) => {
   }
 });
 
-// Gruppennamen abrufen
+// Gibt alle Gruppennamen zurück
 app.get('/api/group-names', async (req, res) => {
   try {
     const result = await pool.query('SELECT id, name FROM group_names ORDER BY name ASC');
@@ -177,7 +176,7 @@ app.get('/api/rooms/check/:code', async (req, res) => {
   }
 });
 
-// Gibt Raum-Info per Code zurück
+// Gibt Raum-Info per Code zurück (z.B. für Warteseite)
 app.get('/api/rooms/code/:code', async (req, res) => {
   try {
     const { code } = req.params;
@@ -194,9 +193,11 @@ app.get('/api/rooms/code/:code', async (req, res) => {
 app.get('/api/rooms/:roomCode/taken-groups', async (req, res) => {
   try {
     const { roomCode } = req.params;
+    // Hole die room_id zum Code
     const roomResult = await pool.query('SELECT id FROM rooms WHERE code = $1', [roomCode]);
     if (roomResult.rows.length === 0) return res.status(404).json({ error: 'Raum nicht gefunden' });
     const roomId = roomResult.rows[0].id;
+    // Hole alle vergebenen Gruppennamen für diesen Raum
     const takenResult = await pool.query('SELECT group_name FROM room_groups WHERE room_id = $1', [roomId]);
     const takenGroups = takenResult.rows.map(row => row.group_name);
     res.json({ takenGroups });
@@ -206,20 +207,20 @@ app.get('/api/rooms/:roomCode/taken-groups', async (req, res) => {
   }
 });
 
-// Spieler tritt einer Gruppe bei
+// Spieler tritt einer Gruppe in einem Raum bei
 app.post('/api/rooms/:roomCode/join-group', async (req, res) => {
   try {
     const { roomCode } = req.params;
     const { groupName } = req.body;
     if (!groupName) return res.status(400).json({ error: 'Gruppenname fehlt' });
-
+    // Hole die room_id zum Code
     const roomResult = await pool.query('SELECT id FROM rooms WHERE code = $1', [roomCode]);
     if (roomResult.rows.length === 0) return res.status(404).json({ error: 'Raum nicht gefunden' });
     const roomId = roomResult.rows[0].id;
-
+    // Prüfe, ob der Gruppenname schon vergeben ist
     const taken = await pool.query('SELECT 1 FROM room_groups WHERE room_id = $1 AND group_name = $2', [roomId, groupName]);
     if (taken.rows.length > 0) return res.status(409).json({ error: 'Gruppenname bereits vergeben' });
-
+    // Eintrag anlegen
     await pool.query('INSERT INTO room_groups (room_id, group_name) VALUES ($1, $2)', [roomId, groupName]);
     res.json({ success: true });
   } catch (err) {
@@ -228,7 +229,23 @@ app.post('/api/rooms/:roomCode/join-group', async (req, res) => {
   }
 });
 
-// ==================== Server starten ====================
+// Setzt den Status eines Raums auf 'gestartet'
+app.patch('/api/rooms/:id/start', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(
+      'UPDATE rooms SET status = $1 WHERE id = $2 RETURNING *',
+      ['gestartet', id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Raum nicht gefunden' });
+    res.json({ room: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Fehler beim Starten der Rallye' });
+  }
+});
+
+// Server starten (Bitte unten lassen es müssen erst routen, hilfsfunktionen usw. definiert sein)
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server läuft auf Port ${PORT}`);

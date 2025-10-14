@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import POIQuestionModal from './POIQuestionModal';
-import samplePOIs from '../data/pois.sample.json'; // sicherstellen, dass die Datei existiert
+import samplePOIs from '../data/pois.sample.json';
 
 // Leaflet icon fix
 import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
@@ -23,7 +24,6 @@ const redIcon = new L.Icon({
 });
 
 const DEFAULT_RADIUS = 50;
-const WASD_STEP = 0.00012;
 
 function haversineMeters([lat1, lon1], [lat2, lon2]) {
   const toRad = v => (v * Math.PI) / 180;
@@ -56,10 +56,18 @@ function shuffle(array) {
   return a;
 }
 
+// Hilfsfunktion zum Auslesen von Query-Parametern
+function useQuery() {
+  return new URLSearchParams(useLocation().search);
+}
+
 export default function Spielseite() {
+  const query = useQuery();
+  const rallyeId = Number(query.get('rallye_id')) || 1; // Default: 1 (Berlin Ost)
+
   const [position, setPosition] = useState(null);
   const [error, setError] = useState(null);
-  const [pois, setPois] = useState(() => shuffle(normalizePois(samplePOIs || [])));
+  const [pois, setPois] = useState([]);
   const [index, setIndex] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [mode, setMode] = useState('gps');
@@ -72,6 +80,16 @@ export default function Spielseite() {
 
   const [timeLeft, setTimeLeft] = useState(2 * 60 * 60);
   const [timerRunning, setTimerRunning] = useState(true);
+
+  // WASD-Steuerung: Schrittweite in Metern
+  const WASD_STEP = 20;
+
+  // Filtere POIs nach rallye_id beim ersten Rendern
+  useEffect(() => {
+    const filtered = shuffle(normalizePois(samplePOIs)).filter(poi => Number(poi.rallye_id) === rallyeId);
+    setPois(filtered);
+    setIndex(0);
+  }, [rallyeId]);
 
   useEffect(() => {
     if (!timerRunning) return;
@@ -102,6 +120,25 @@ export default function Spielseite() {
     };
   }, [mode]);
 
+  // WASD Steuerung
+  useEffect(() => {
+    if (mode !== 'wasd') return;
+    function handleKey(e) {
+      if (!position) return;
+      let [lat, lon] = position;
+      // Schrittweite in Grad (ungefähr, für Berlin)
+      const latStep = WASD_STEP / 111320; // Meter zu Breitengrad
+      const lonStep = WASD_STEP / (40075000 * Math.cos(lat * Math.PI / 180) / 360); // Meter zu Längengrad
+      if (e.key === 'w' || e.key === 'ArrowUp') lat += latStep;
+      if (e.key === 's' || e.key === 'ArrowDown') lat -= latStep;
+      if (e.key === 'a' || e.key === 'ArrowLeft') lon -= lonStep;
+      if (e.key === 'd' || e.key === 'ArrowRight') lon += lonStep;
+      setPosition([lat, lon]);
+    }
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [mode, position]);
+
   const isNearby = useCallback((poi, userPos) => {
     if (!poi || !userPos) return false;
     const rad = poi.radiusMeters ?? DEFAULT_RADIUS;
@@ -130,6 +167,7 @@ export default function Spielseite() {
   function toggleMode() {
     setModalOpen(false);
     setMode(prev => prev === 'gps' ? 'wasd' : 'gps');
+    // Bei Wechsel zu WASD: Startposition setzen, falls noch keine
     if (mode === 'gps' && !position && activePoi?.coords) setPosition(activePoi.coords);
   }
 
@@ -137,6 +175,39 @@ export default function Spielseite() {
     const m = Math.floor(sec / 60);
     const s = sec % 60;
     return `${m}:${String(s).padStart(2,'0')}`;
+  }
+
+  // Callback für POIQuestionModal: Wenn alle Fragen beantwortet, nächster POI
+  function handleAnswered(qId, given, wasCorrect) {
+    const currentPoi = pois[index];
+    if (!currentPoi) return;
+
+    // Markiere die Frage als beantwortet (hier: userAnswers setzen)
+    const updatedPois = pois.map((poi, i) => {
+      if (i !== index) return poi;
+      return {
+        ...poi,
+        questions: poi.questions.map(q =>
+          q.id === qId
+            ? { ...q, userAnswers: [...(q.userAnswers || []), given] }
+            : q
+        )
+      };
+    });
+    setPois(updatedPois);
+
+    // Prüfe, ob alle Fragen beantwortet sind
+    const allAnswered = updatedPois[index].questions.every(q => q.userAnswers && q.userAnswers.length > 0);
+
+    if (allAnswered) {
+      setModalOpen(false);
+      if (index < pois.length - 1) {
+        setTimeout(() => setIndex(index + 1), 400);
+      } else {
+        // Optional: Spielende-Logik
+        // alert('Alle POIs abgeschlossen!');
+      }
+    }
   }
 
   return (
@@ -178,6 +249,12 @@ export default function Spielseite() {
         </button>
       </div>
 
+      {mode === 'wasd' && (
+        <div style={{ position: 'absolute', bottom: 20, left: 20, zIndex: 2000, background: 'rgba(255,255,255,0.95)', padding: '8px 12px', borderRadius: 8 }}>
+          <b>WASD-Steuerung aktiv:</b> <span style={{ fontFamily: 'monospace' }}>W/A/S/D</span> oder Pfeiltasten bewegen dich auf der Karte.
+        </div>
+      )}
+
       {error && (
         <div style={{ position: 'absolute', top: 70, left: 12, zIndex: 2000, background: 'rgba(255,255,255,0.95)', padding: '6px 8px', borderRadius: 6, color: 'crimson' }}>
           {error}
@@ -188,7 +265,7 @@ export default function Spielseite() {
         poi={activePoi}
         open={modalOpen}
         isNearby={isNearby(activePoi, position)}
-        onAnswered={(qId, given, wasCorrect) => {}}
+        onAnswered={handleAnswered}
         onClose={() => setModalOpen(false)}
       />
     </div>
