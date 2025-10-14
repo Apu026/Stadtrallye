@@ -26,16 +26,16 @@ const Startseite = ({ onLogin }) => {
     const res = await fetch(`http://localhost:5000/api/rooms/check/${roomCode}`);
     const data = await res.json();
 
-    console.log('🔍 Response von /api/rooms/check:', data);
+    console.log('Response von /api/rooms/check:', data);
 
     if (!res.ok) {
       setError('Serverfehler');
       return;
     }
 
-    if (data.exists && data.rallye_id) {
-      navigate(`/spiel?roomCode=${roomCode}&rallye_id=${data.rallye_id}`);
-    } else if (data.exists && !data.rallye_id) {
+  if (data.exists && data.rallye_id) {
+   navigate(`/group-select/${roomCode}`);
+    }else if (data.exists && !data.rallye_id) {
       setError('Raum existiert, aber Rallye-ID fehlt');
     } else {
       setError('Raum nicht gefunden oder nicht offen');
