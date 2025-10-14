@@ -1,14 +1,11 @@
 // src/components/Startseite.jsx
 
 
-import { useNavigate } from 'react-router-dom';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LoginModal from './LoginModal';
 import MapBackground from './MapBackground';
 import loginIcon from '../assets/login.svg';
-
-
 
 const Startseite = ({ onLogin }) => {
   const [showLogin, setShowLogin] = useState(false);
@@ -16,43 +13,56 @@ const Startseite = ({ onLogin }) => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleJoin = async (e) => {
-    e.preventDefault();
-    setError('');
-    // Prüfe, ob der Raum existiert (API-Call)
-    try {
-      const res = await fetch(`http://localhost:5000/api/rooms/check/${roomCode}`);
-      const data = await res.json();
-      if (res.ok && data.exists) {
-        navigate(`/group-select/${roomCode}`);
-      } else {
-        setError('Raum nicht gefunden oder nicht offen');
-      }
-    } catch (err) {
-      setError('Server nicht erreichbar');
-    }
-  };
+ const handleJoin = async (e) => {
+  e.preventDefault();
+  setError('');
 
-  const navigate = useNavigate();
+  if (!roomCode) {
+    setError('Bitte Raum-Code eingeben');
+    return;
+  }
+
+  try {
+    const res = await fetch(`http://localhost:5000/api/rooms/check/${roomCode}`);
+    const data = await res.json();
+
+    console.log('🔍 Response von /api/rooms/check:', data);
+
+    if (!res.ok) {
+      setError('Serverfehler');
+      return;
+    }
+
+    if (data.exists && data.rallye_id) {
+      navigate(`/spiel?roomCode=${roomCode}&rallye_id=${data.rallye_id}`);
+    } else if (data.exists && !data.rallye_id) {
+      setError('Raum existiert, aber Rallye-ID fehlt');
+    } else {
+      setError('Raum nicht gefunden oder nicht offen');
+    }
+  } catch (err) {
+    console.error(err);
+    setError('Server nicht erreichbar');
+  }
+};
+
 
   return (
     <>
       <MapBackground />
-      <span className="login-icon" aria-label="Login" onClick={() => setShowLogin(true)} style={{ cursor: 'pointer' }}>
-        <img src={loginIcon} alt="Login" style={{ width: 40, height: 40 }} />
-      <span 
-        className="login-icon" 
-        aria-label="Login" 
-        onClick={() => setShowLogin(true)} 
-        style={{ cursor: 'pointer' }}
+      <span
+        className="login-icon"
+        aria-label="Login"
+        onClick={() => setShowLogin(true)}
+        style={{ cursor: 'pointer', position: 'absolute', top: 20, right: 20, zIndex: 1000 }}
       >
         <img src={loginIcon} alt="Login" style={{ width: 40, height: 40 }} />
       </span>
       {showLogin && <LoginModal onClose={() => setShowLogin(false)} onLogin={onLogin} />}
-      <div>
+      <div style={{ maxWidth: 400, margin: '80px auto', background: '#fff', borderRadius: 12, padding: 32, boxShadow: '0 4px 16px rgba(0,0,0,0.08)', textAlign: 'center' }}>
         <h2>Willkommen zur Stadtrallye!</h2>
         <p>Starte hier deine Rallye und entdecke die Stadt.</p>
-        <form onSubmit={handleJoin} style={{ marginTop: 32, maxWidth: 350 }}>
+        <form onSubmit={handleJoin} style={{ marginTop: 32 }}>
           <label htmlFor="roomCode">Raum-Code eingeben:</label>
           <input
             id="roomCode"
@@ -92,8 +102,8 @@ const Startseite = ({ onLogin }) => {
             Beitreten
           </button>
         </form>
-        <button 
-          onClick={() => navigate('/spiel')} 
+        <button
+          onClick={() => navigate('/spiel')}
           style={{ padding: "10px 20px", marginTop: "10px", cursor: "pointer" }}
         >
           Zur Spielseite

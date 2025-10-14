@@ -22,7 +22,8 @@ function App() {
         <Route path="/admin" element={isLoggedIn && userRole === 'admin' ? <AdminPage /> : <ClosedSessionLogin onLogin={(data) => { setIsLoggedIn(true); setUserRole(data?.role); }} />} />
         <Route path="/group-select/:roomCode" element={<GroupSelect />} />
         <Route path="/waiting-room/:roomCode/:groupName" element={<WaitingRoom />} />
-        <Route path="/spiel/:roomCode/:groupName" element={<Spielseite />} />
+        <Route path="/spiel" element={<Spielseite />} />
+
       </Routes>
     </BrowserRouter>
   );

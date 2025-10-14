@@ -7,12 +7,10 @@ const bcrypt = require('bcrypt');
 // .env-Datei laden (DB-Login)
 dotenv.config();
 
-
 // Express-App initialisieren
 const app = express();
 app.use(cors()); // CORS für API erlauben
 app.use(express.json()); // JSON-Body-Parsing
-
 
 // Verbindung zur PostgreSQL-Datenbank herstellen
 const pool = new Pool({
@@ -34,7 +32,6 @@ app.get('/api/users', async (req, res) => {
   }
 });
 
-
 // Login-Route für Nutzer
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
@@ -52,7 +49,6 @@ app.post('/api/login', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
-
 
 // Hilfsfunktion: Erstellt einen zufälligen Raum-Code (Für Spieler)
 function generateRoomCode(length = 6) {
@@ -100,7 +96,6 @@ app.post('/api/rooms', async (req, res) => {
   }
 });
 
-
 // Gibt alle offenen Räume zurück
 app.get('/api/rooms', async (req, res) => {
   try {
@@ -139,7 +134,6 @@ app.patch('/api/rooms/:id/close', async (req, res) => {
   }
 });
 
-
 // Löscht einen Raum anhand der ID
 app.delete('/api/rooms/:id', async (req, res) => {
   try {
@@ -168,13 +162,47 @@ app.get('/api/group-names', async (req, res) => {
 app.get('/api/rooms/check/:code', async (req, res) => {
   try {
     const { code } = req.params;
-    const result = await pool.query('SELECT * FROM rooms WHERE code = $1 AND status = $2', [code, 'offen']);
-    res.json({ exists: result.rows.length > 0 });
+
+    // Korrekte SQL-Abfrage (Case-insensitive, Status offen/gestartet/open)
+    const query = `
+      SELECT id, rallye_id, status, code
+      FROM rooms
+      WHERE UPPER(code) = UPPER($1)
+      AND status IN ('offen', 'open', 'gestartet')
+      LIMIT 1;
+    `;
+
+    const result = await pool.query(query, [code]);
+
+    console.log('🔍 Raumprüfung Ergebnis:', result.rows);
+
+    // Falls Raum gefunden
+    if (result.rows.length > 0) {
+      const room = result.rows[0];
+      console.log('✅ Gefundener Raum:', room);
+
+      // Sicherheitscheck: rallye_id darf nicht null sein
+      if (!room.rallye_id) {
+        console.warn('⚠️ Kein rallye_id im Raum gefunden!');
+      }
+
+      return res.json({
+        exists: true,
+        rallye_id: room.rallye_id ?? null,
+        status: room.status,
+        code: room.code,
+        id: room.id
+      });
+    }
+
+    // Falls kein Raum gefunden
+    res.json({ exists: false });
   } catch (err) {
-    console.error(err);
+    console.error('❌ Fehler in /api/rooms/check/:code:', err);
     res.status(500).json({ error: 'Fehler beim Prüfen des Raum-Codes' });
   }
 });
+
 
 // Gibt Raum-Info per Code zurück (z.B. für Warteseite)
 app.get('/api/rooms/code/:code', async (req, res) => {

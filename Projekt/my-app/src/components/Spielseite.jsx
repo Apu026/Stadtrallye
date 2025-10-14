@@ -82,7 +82,7 @@ export default function Spielseite() {
   const [timerRunning, setTimerRunning] = useState(true);
 
   // WASD-Steuerung: Schrittweite in Metern
-  const WASD_STEP = 20;
+  const WASD_STEP = 100;
 
   // Filtere POIs nach rallye_id beim ersten Rendern
   useEffect(() => {
