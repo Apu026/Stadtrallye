@@ -165,6 +165,73 @@ app.get('/api/pois/:id/questions', async (req, res) => {
   }
 });
 
+// Create question for POI
+app.post('/api/pois/:id/questions', async (req, res) => {
+  try {
+    const poiId = req.params.id;
+    const { question, answers, correct_answer_idx } = req.body || {};
+    // assume 'answers' column is a text[] in Postgres -> pass JS array and cast to text[]
+    const q = `INSERT INTO question (poi_id, question, answers, correct_answer_idx)
+               VALUES ($1,$2,$3::text[],$4)
+               RETURNING q_id, poi_id, question, answers, correct_answer_idx`;
+    const vals = [poiId, question || '', Array.isArray(answers) ? answers : [], correct_answer_idx != null ? Number(correct_answer_idx) : 0];
+    const { rows } = await pool.query(q, vals);
+    const r = rows[0];
+    res.status(201).json({
+      id: r.q_id,
+      poi_id: r.poi_id,
+      question: r.question,
+      answers: r.answers, // pg returns text[] as JS array
+      correct_answer_idx: r.correct_answer_idx
+    });
+  } catch (err) {
+    console.error('POST /api/pois/:id/questions error', err && err.stack ? err.stack : err);
+    res.status(500).json({ error: 'Could not create question' });
+  }
+});
+
+// Update question
+app.put('/api/questions/:qid', async (req, res) => {
+  try {
+    const qid = req.params.qid;
+    const { question, answers, correct_answer_idx } = req.body || {};
+    const q = `UPDATE question SET
+                 question = COALESCE($2, question),
+                 answers = COALESCE($3::text[], answers),
+                 correct_answer_idx = COALESCE($4, correct_answer_idx)
+               WHERE q_id = $1
+               RETURNING q_id, poi_id, question, answers, correct_answer_idx`;
+    const vals = [qid, question, Array.isArray(answers) ? answers : null, correct_answer_idx];
+    const { rows } = await pool.query(q, vals);
+    if (!rows.length) return res.status(404).json({ error: 'Question not found' });
+    const r = rows[0];
+    res.json({
+      id: r.q_id,
+      poi_id: r.poi_id,
+      question: r.question,
+      answers: r.answers,
+      correct_answer_idx: r.correct_answer_idx
+    });
+  } catch (err) {
+    console.error('PUT /api/questions/:qid error', err && err.stack ? err.stack : err);
+    res.status(500).json({ error: 'Could not update question' });
+  }
+});
+
+// Delete question
+app.delete('/api/questions/:qid', async (req, res) => {
+  try {
+    const qid = req.params.qid;
+    const q = `DELETE FROM question WHERE q_id = $1`;
+    const { rowCount } = await pool.query(q, [qid]);
+    if (rowCount === 0) return res.status(404).json({ error: 'Question not found' });
+    res.status(204).end();
+  } catch (err) {
+    console.error('DELETE /api/questions/:qid error', err && err.stack ? err.stack : err);
+    res.status(500).json({ error: 'Could not delete question' });
+  }
+});
+
 // ===== Other read endpoints =====
 
 // GET groups
