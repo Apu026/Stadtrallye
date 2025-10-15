@@ -34,21 +34,18 @@ const WaitingRoom = () => {
           setError('Rallye-ID fehlt für diesen Raum');
         } else {
           // Hole Rallye-Namen
-          const rallyeRes = await fetch(`http://localhost:5000/api/rallyes`);
-          const rallyeData = await rallyeRes.json();
-          if (rallyeRes.ok && rallyeData.rallyes) {
-            const rallye = rallyeData.rallyes.find(r => r.id === rallyeId);
-            if (rallye) setRallyeName(rallye.name);
+          if (rallyeId) {
+            const rallyeRes = await fetch(`http://localhost:5000/api/rallyes`);
+            const rallyeData = await rallyeRes.json();
+            if (rallyeRes.ok && rallyeData.rallyes) {
+              const rallye = rallyeData.rallyes.find(r => r.rallye_id === rallyeId);
+              if (rallye) setRallyeName(rallye.name);
+            }
           }
-        }
-
-        // Prüfe Status
-        if (data.status === 'gestartet') {
-          setStarted(true);
-          navigate(`/spiel/${roomCode}/${groupName}?rallye_id=${rallyeId}`);
-        } else {
-          setStarted(false);
-          setError('Warten auf Start der Rallye...');
+          if (data.room.status === 'gestartet') {
+            setStarted(true);
+            navigate(`/spiel/${roomCode}/${groupName}`);
+          }
         }
       } catch (err) {
         console.error(err);

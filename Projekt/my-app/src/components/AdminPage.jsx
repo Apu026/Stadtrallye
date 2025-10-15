@@ -21,7 +21,7 @@ const AdminPage = () => {
   const res = await fetch('/api/rallyes');
       const data = await res.json();
       setRallyes(data.rallyes || []);
-      if (data.rallyes && data.rallyes.length > 0) setRallyeId(data.rallyes[0].id);
+  if (data.rallyes && data.rallyes.length > 0) setRallyeId(data.rallyes[0].rallye_id);
     } catch (err) {
       setError('Fehler beim Laden der Rallyes');
     }
@@ -42,14 +42,22 @@ const AdminPage = () => {
     }
   };
 
-  // Lädt Rallyes und Räume beim ersten Laden der Seite
+  // Lädt Rallyes und Räume beim ersten Laden der Seite und pollt regelmäßig Räume
   useEffect(() => {
     fetchRallyes();
     fetchRooms();
+    const interval = setInterval(() => {
+      fetchRooms();
+    }, 5000); // alle 5 Sekunden
+    return () => clearInterval(interval);
   }, []);
 
   // Erstellt einen neuen Raum für die ausgewählte Rallye
   const handleCreateRoom = async () => {
+    if (!rallyeId) {
+      setError('Bitte zuerst eine Rallye auswählen!');
+      return;
+    }
     setCreating(true);
     setError('');
     setSuccess('');
@@ -61,7 +69,7 @@ const AdminPage = () => {
       });
       const data = await res.json();
       if (res.ok && data.room) {
-        setSuccess(`Raum erstellt! Code: ${data.room.code}`);
+  setSuccess(`Raum erstellt! Code: ${data.room.entry_code}`);
         fetchRooms(); // Nach dem Erstellen neu laden
       } else {
         setError(data.error || 'Fehler beim Erstellen des Raums');
@@ -144,7 +152,9 @@ const AdminPage = () => {
       <div style={{ marginBottom: 16 }}>
         <label htmlFor="rallye-select" style={{ fontWeight: 500, marginRight: 8 }}>Stadtrallye wählen:</label>
         <select id="rallye-select" value={rallyeId} onChange={e => setRallyeId(e.target.value)} style={{ fontSize: 16, padding: '6px 12px', borderRadius: 6 }}>
-          {rallyes.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
+            {rallyes.map((opt, idx) => (
+              <option key={opt.rallye_id || opt.name || idx} value={opt.rallye_id}>{opt.name}</option>
+            ))}
         </select>
       </div>
 
@@ -162,28 +172,29 @@ const AdminPage = () => {
         <h3>Offene Räume</h3>
         {openRooms.length === 0 && <div>Keine offenen Räume.</div>}
         <ul style={{ listStyle: 'none', padding: 0 }}>
-          {openRooms.map(room => (
-            <li key={room.id} style={{ marginBottom: 18, background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #0001', padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+          {openRooms.map((room, idx) => (
+            <li key={room.session_id || room.id || room.entry_code || idx} style={{ marginBottom: 18, background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #0001', padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
               {/* Raumdaten */}
-              <span style={{ fontWeight: 600, fontSize: 18 }}>Code: {room.code}</span>
+              <span style={{ fontWeight: 600, fontSize: 18 }}>Code: {room.entry_code}</span>
               <span style={{ marginLeft: 16, color: '#555', fontSize: 15 }}>Status: {room.status}</span>
               <span style={{ marginLeft: 16, color: '#888', fontSize: 15 }}>
-                Rallye: {rallyes.find(r => r.id === room.rallye_id)?.name || room.rallye_id}
+                Rallye: {rallyes.find(r => r.rallye_id === room.rallye_id)?.name || room.rallye_id}
               </span>
               {/* Button zum Starten */}
-              <button className="admin-page-action-btn admin-page-start-btn" onClick={() => handleStartRoom(room.id)}>
+              <button className="admin-page-action-btn admin-page-start-btn" onClick={() => handleStartRoom(room.session_id)}>
                 Rallye starten
               </button>
               {/* Button zum Schließen */}
-              <button className="admin-page-action-btn admin-page-close-btn" onClick={() => handleCloseRoom(room.id)}>
+              <button className="admin-page-action-btn admin-page-close-btn" onClick={() => handleCloseRoom(room.session_id)}>
                 Raum schließen
               </button>
               {/* Button zum Löschen */}
-              <button className="admin-page-action-btn admin-page-delete-btn" onClick={() => handleDeleteRoom(room.id)}>
+              <button className="admin-page-action-btn admin-page-delete-btn" onClick={() => handleDeleteRoom(room.session_id)}>
                 Raum löschen
               </button>
             </li>
           ))}
+      
         </ul>
       </div>
 
@@ -192,20 +203,21 @@ const AdminPage = () => {
         <h3>Geschlossene Räume</h3>
         {closedRooms.length === 0 && <div>Keine geschlossenen Räume.</div>}
         <ul style={{ listStyle: 'none', padding: 0 }}>
-          {closedRooms.map(room => (
-            <li key={room.id} style={{ marginBottom: 18, background: '#f3f3f3', borderRadius: 8, boxShadow: '0 2px 8px #0001', padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', opacity: 0.7 }}>
+          {closedRooms.map((room, idx) => (
+            <li key={room.session_id || room.id || room.entry_code || idx} style={{ marginBottom: 18, background: '#f3f3f3', borderRadius: 8, boxShadow: '0 2px 8px #0001', padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', opacity: 0.7 }}>
               {/* Raumdaten */}
-              <span style={{ fontWeight: 600, fontSize: 18 }}>Code: {room.code}</span>
+              <span style={{ fontWeight: 600, fontSize: 18 }}>Code: {room.entry_code}</span>
               <span style={{ marginLeft: 16, color: '#555', fontSize: 15 }}>Status: {room.status}</span>
               <span style={{ marginLeft: 16, color: '#888', fontSize: 15 }}>
-                Rallye: {rallyes.find(r => r.id === room.rallye_id)?.name || room.rallye_id}
+                Rallye: {rallyes.find(r => r.rallye_id === room.rallye_id)?.name || room.rallye_id}
               </span>
               {/* Button zum Löschen */}
-              <button className="admin-page-action-btn admin-page-delete-btn" onClick={() => handleDeleteRoom(room.id)}>
+              <button className="admin-page-action-btn admin-page-delete-btn" onClick={() => handleDeleteRoom(room.session_id)}>
                 Raum löschen
               </button>
             </li>
           ))}
+      
         </ul>
       </div>
 
@@ -214,20 +226,21 @@ const AdminPage = () => {
         <h3>Gestartete Räume</h3>
         {startedRooms.length === 0 && <div>Keine gestarteten Räume.</div>}
         <ul style={{ listStyle: 'none', padding: 0 }}>
-          {startedRooms.map(room => (
-            <li key={room.id} style={{ marginBottom: 18, background: '#e6f7ff', borderRadius: 8, boxShadow: '0 2px 8px #0001', padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', opacity: 0.95 }}>
+          {startedRooms.map((room, idx) => (
+            <li key={room.session_id || room.id || room.entry_code || idx} style={{ marginBottom: 18, background: '#e6f7ff', borderRadius: 8, boxShadow: '0 2px 8px #0001', padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', opacity: 0.95 }}>
               {/* Raumdaten */}
-              <span style={{ fontWeight: 600, fontSize: 18 }}>Code: {room.code}</span>
+              <span style={{ fontWeight: 600, fontSize: 18 }}>Code: {room.entry_code}</span>
               <span style={{ marginLeft: 16, color: '#555', fontSize: 15 }}>Status: {room.status}</span>
               <span style={{ marginLeft: 16, color: '#888', fontSize: 15 }}>
-                Rallye: {rallyes.find(r => r.id === room.rallye_id)?.name || room.rallye_id}
+                Rallye: {rallyes.find(r => r.rallye_id === room.rallye_id)?.name || room.rallye_id}
               </span>
               {/* Button zum Löschen */}
-              <button className="admin-page-action-btn admin-page-delete-btn" onClick={() => handleDeleteRoom(room.id)}>
+              <button className="admin-page-action-btn admin-page-delete-btn" onClick={() => handleDeleteRoom(room.session_id)}>
                 Raum löschen
               </button>
             </li>
           ))}
+      
         </ul>
       </div>
     </div>

@@ -15,7 +15,7 @@
 }
 /* Styles für den Warteraum (WaitingRoom) */
 .waitingroom-bg {
-  width: 100vw;
+  width: 100%;
   min-height: 100vh;
   background: #f7f7f7;
   margin: 0;

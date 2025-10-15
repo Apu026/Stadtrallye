@@ -1,6 +1,6 @@
 /* Styles für die Gruppenauswahl-Seite */
 .groupselect-bg {
-  width: 100vw;
+  width: 100%;
   min-height: 100vh;
   margin: 0;
   padding: 32px 2vw;
