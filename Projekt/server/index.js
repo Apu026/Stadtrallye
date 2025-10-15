@@ -190,7 +190,7 @@ app.get("/api/rooms/check/:code", async (req, res) => {
       `SELECT session_id AS id, rallye_id, TRIM(status) AS status, entry_code AS code
        FROM session
        WHERE UPPER(entry_code) = UPPER($1)
-       AND TRIM(status) IN ('offen','open','gestartet')
+       AND UPPER(TRIM(status)) IN ('OFFEN','OPEN','GESTARTET')
        LIMIT 1`,
       [code]
     );
@@ -202,10 +202,11 @@ app.get("/api/rooms/check/:code", async (req, res) => {
       res.json({ exists: false });
     }
   } catch (e) {
-    console.error(e);
+    console.error("❌ Fehler beim Prüfen des Raumcodes:", e);
     res.status(500).json({ error: "Fehler beim Prüfen des Raumcodes" });
   }
 });
+
 
 // -------------------- Gruppen / SessionGroups --------------------
 

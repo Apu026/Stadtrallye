@@ -63,7 +63,7 @@ function useQuery() {
 
 export default function Spielseite() {
   const query = useQuery();
-  const rallyeId = Number(query.get('rallye_id')) || 1; // Default: 1 (Berlin Ost)
+  const rallyeId = Number(query.get('rallye_id')) || 1;
 
   const [position, setPosition] = useState(null);
   const [error, setError] = useState(null);
@@ -71,7 +71,6 @@ export default function Spielseite() {
   const [index, setIndex] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [mode, setMode] = useState('gps');
-  const [rooms, setRooms] = useState([]);
 
   const mapRef = useRef(null);
   const geoWatchRef = useRef(null);
@@ -81,10 +80,8 @@ export default function Spielseite() {
   const [timeLeft, setTimeLeft] = useState(2 * 60 * 60);
   const [timerRunning, setTimerRunning] = useState(true);
 
-  // WASD-Steuerung: Schrittweite in Metern
   const WASD_STEP = 100;
 
-  // Filtere POIs nach rallye_id beim ersten Rendern
   useEffect(() => {
     const filtered = shuffle(normalizePois(samplePOIs)).filter(poi => Number(poi.rallye_id) === rallyeId);
     setPois(filtered);
@@ -120,15 +117,13 @@ export default function Spielseite() {
     };
   }, [mode]);
 
-  // WASD Steuerung
   useEffect(() => {
     if (mode !== 'wasd') return;
     function handleKey(e) {
       if (!position) return;
       let [lat, lon] = position;
-      // Schrittweite in Grad (ungefähr, für Berlin)
-      const latStep = WASD_STEP / 111320; // Meter zu Breitengrad
-      const lonStep = WASD_STEP / (40075000 * Math.cos(lat * Math.PI / 180) / 360); // Meter zu Längengrad
+      const latStep = WASD_STEP / 111320;
+      const lonStep = WASD_STEP / (40075000 * Math.cos(lat * Math.PI / 180) / 360);
       if (e.key === 'w' || e.key === 'ArrowUp') lat += latStep;
       if (e.key === 's' || e.key === 'ArrowDown') lat -= latStep;
       if (e.key === 'a' || e.key === 'ArrowLeft') lon -= lonStep;
@@ -154,20 +149,9 @@ export default function Spielseite() {
     }
   }
 
-  async function fetchRooms() {
-    try {
-      const res = await fetch('http://localhost:5000/api/rooms/all');
-      const data = await res.json();
-      setRooms(data.rooms || []);
-    } catch (err) {
-      console.error('Fehler beim Laden der Räume:', err);
-    }
-  }
-
   function toggleMode() {
     setModalOpen(false);
     setMode(prev => prev === 'gps' ? 'wasd' : 'gps');
-    // Bei Wechsel zu WASD: Startposition setzen, falls noch keine
     if (mode === 'gps' && !position && activePoi?.coords) setPosition(activePoi.coords);
   }
 
@@ -177,12 +161,10 @@ export default function Spielseite() {
     return `${m}:${String(s).padStart(2,'0')}`;
   }
 
-  // Callback für POIQuestionModal: Wenn alle Fragen beantwortet, nächster POI
   function handleAnswered(qId, given, wasCorrect) {
     const currentPoi = pois[index];
     if (!currentPoi) return;
 
-    // Markiere die Frage als beantwortet (hier: userAnswers setzen)
     const updatedPois = pois.map((poi, i) => {
       if (i !== index) return poi;
       return {
@@ -196,16 +178,12 @@ export default function Spielseite() {
     });
     setPois(updatedPois);
 
-    // Prüfe, ob alle Fragen beantwortet sind
     const allAnswered = updatedPois[index].questions.every(q => q.userAnswers && q.userAnswers.length > 0);
 
     if (allAnswered) {
       setModalOpen(false);
       if (index < pois.length - 1) {
         setTimeout(() => setIndex(index + 1), 400);
-      } else {
-        // Optional: Spielende-Logik
-        // alert('Alle POIs abgeschlossen!');
       }
     }
   }
@@ -222,26 +200,6 @@ export default function Spielseite() {
         {position && <Marker position={position} />}
         {activePoi && <Marker position={activePoi.coords} icon={redIcon} eventHandlers={{ click: handlePoiClick }} />}
       </MapContainer>
-
-      <div style={{ position: 'absolute', top: 12, left: 60, zIndex: 2000, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={{ background: 'rgba(255,255,255,0.9)', padding: '6px 8px', borderRadius: 6, fontWeight: 'bold' }}>
-          ⏱️ {formatTime(timeLeft)}
-        </div>
-
-        <button onClick={fetchRooms} style={{ padding: '8px 10px', borderRadius: 6, border: 'none', background: '#5cb85c', color: '#fff', cursor: 'pointer' }}>
-          Räume laden
-        </button>
-
-        {rooms.length > 0 && (
-          <div style={{ background: 'rgba(255,255,255,0.9)', padding: '6px 8px', borderRadius: 6, maxHeight: 200, overflowY: 'auto' }}>
-            {rooms.map(r => (
-              <div key={r.id} style={{ marginBottom: 4 }}>
-                <strong>{r.code}</strong> | Status: {r.status} | Rallye-ID: {r.rallye_id}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
 
       <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 2000 }}>
         <button onClick={toggleMode} style={{ padding: '8px 10px', borderRadius: 6, border: 'none', background: '#0078d4', color: '#fff', cursor: 'pointer' }}>
@@ -268,6 +226,6 @@ export default function Spielseite() {
         onAnswered={handleAnswered}
         onClose={() => setModalOpen(false)}
       />
-    </div>
+    </div> 
   );
-}
+} 
