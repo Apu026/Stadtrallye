@@ -1,7 +1,6 @@
 import './App.css';
-import React, { useState } from 'react';
+import React from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
-
 import Startseite from './components/Startseite';
 import ClosedSessionLogin from './components/ClosedSessionLogin';
 import SuperadminPage from './components/SuperadminPage';
@@ -9,6 +8,7 @@ import AdminPage from './components/AdminPage';
 import GroupSelect from './components/GroupSelect';
 import WaitingRoom from './components/WaitingRoom';
 import Spielseite from './components/Spielseite';
+import Endseite from './components/Endseite/Endseite';
  
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -23,6 +23,7 @@ function App() {
         <Route path="/group-select/:roomCode" element={<GroupSelect />} />
         <Route path="/waiting-room/:roomCode/:groupName" element={<WaitingRoom />} />
         <Route path="/spiel" element={<Spielseite />} />
+        <Route path="/endseite" element={<Endseite />} />
 
       </Routes>
     </BrowserRouter>
