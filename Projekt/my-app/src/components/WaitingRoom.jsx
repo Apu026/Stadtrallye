@@ -14,7 +14,7 @@ const WaitingRoom = () => {
 
     const fetchRoomAndRallye = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/rooms/check/${roomCode}`);
+  const res = await fetch(`/api/rooms/check/${roomCode}`);
         const data = await res.json();
 
         if (!res.ok) {
@@ -28,23 +28,26 @@ const WaitingRoom = () => {
         }
 
         // Raum existiert
-        rallyeId = data.rallye_id;
+        rallyeId = Number(data.rallye_id);
 
         if (!rallyeId) {
           setError('Rallye-ID fehlt für diesen Raum');
         } else {
           // Hole Rallye-Namen
-          if (rallyeId) {
-            const rallyeRes = await fetch(`http://localhost:5000/api/rallyes`);
-            const rallyeData = await rallyeRes.json();
-            if (rallyeRes.ok && rallyeData.rallyes) {
-              const rallye = rallyeData.rallyes.find(r => r.rallye_id === rallyeId);
-              if (rallye) setRallyeName(rallye.name);
-            }
+          const rallyeRes = await fetch(`/api/rallyes`);
+          const rallyeData = await rallyeRes.json();
+          if (rallyeRes.ok && rallyeData.rallyes) {
+            const rallye = rallyeData.rallyes.find(r => Number(r.id) === rallyeId);
+            if (rallye) setRallyeName(rallye.name);
           }
-          if (data.room.status === 'gestartet') {
+          // Prüfe Status
+          const status = data.status || (data.room && data.room.status);
+          if (status === 'gestartet') {
             setStarted(true);
-            navigate(`/spiel/${roomCode}/${groupName}`);
+            navigate(`/spiel/${roomCode}/${groupName}?rallye_id=${rallyeId}`);
+          } else {
+            setStarted(false);
+            setError('Warten auf Start der Rallye...');
           }
         }
       } catch (err) {

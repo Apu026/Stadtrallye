@@ -20,8 +20,8 @@ const AdminPage = () => {
     try {
   const res = await fetch('/api/rallyes');
       const data = await res.json();
-      setRallyes(data.rallyes || []);
-  if (data.rallyes && data.rallyes.length > 0) setRallyeId(data.rallyes[0].rallye_id);
+    setRallyes(data.rallyes || []);
+    if (data.rallyes && data.rallyes.length > 0) setRallyeId(data.rallyes[0].id);
     } catch (err) {
       setError('Fehler beim Laden der Rallyes');
     }
@@ -62,10 +62,10 @@ const AdminPage = () => {
     setError('');
     setSuccess('');
     try {
-  const res = await fetch('/api/rooms', {
+      const res = await fetch('/api/rooms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rallye_id: rallyeId })
+        body: JSON.stringify({ rallye_id: Number(rallyeId) })
       });
       const data = await res.json();
       if (res.ok && data.room) {
@@ -153,7 +153,7 @@ const AdminPage = () => {
         <label htmlFor="rallye-select" style={{ fontWeight: 500, marginRight: 8 }}>Stadtrallye wählen:</label>
         <select id="rallye-select" value={rallyeId} onChange={e => setRallyeId(e.target.value)} style={{ fontSize: 16, padding: '6px 12px', borderRadius: 6 }}>
             {rallyes.map((opt, idx) => (
-              <option key={opt.rallye_id || opt.name || idx} value={opt.rallye_id}>{opt.name}</option>
+              <option key={opt.id ?? opt.name ?? idx} value={opt.id ?? opt.name}>{opt.name}</option>
             ))}
         </select>
       </div>
@@ -178,7 +178,7 @@ const AdminPage = () => {
               <span style={{ fontWeight: 600, fontSize: 18 }}>Code: {room.entry_code}</span>
               <span style={{ marginLeft: 16, color: '#555', fontSize: 15 }}>Status: {room.status}</span>
               <span style={{ marginLeft: 16, color: '#888', fontSize: 15 }}>
-                Rallye: {rallyes.find(r => r.rallye_id === room.rallye_id)?.name || room.rallye_id}
+                Rallye: {rallyes.find(r => r.id === room.rallye_id)?.name || room.rallye_id}
               </span>
               {/* Button zum Starten */}
               <button className="admin-page-action-btn admin-page-start-btn" onClick={() => handleStartRoom(room.session_id)}>
@@ -209,7 +209,7 @@ const AdminPage = () => {
               <span style={{ fontWeight: 600, fontSize: 18 }}>Code: {room.entry_code}</span>
               <span style={{ marginLeft: 16, color: '#555', fontSize: 15 }}>Status: {room.status}</span>
               <span style={{ marginLeft: 16, color: '#888', fontSize: 15 }}>
-                Rallye: {rallyes.find(r => r.rallye_id === room.rallye_id)?.name || room.rallye_id}
+                Rallye: {rallyes.find(r => r.id === room.rallye_id)?.name || room.rallye_id}
               </span>
               {/* Button zum Löschen */}
               <button className="admin-page-action-btn admin-page-delete-btn" onClick={() => handleDeleteRoom(room.session_id)}>
@@ -232,7 +232,7 @@ const AdminPage = () => {
               <span style={{ fontWeight: 600, fontSize: 18 }}>Code: {room.entry_code}</span>
               <span style={{ marginLeft: 16, color: '#555', fontSize: 15 }}>Status: {room.status}</span>
               <span style={{ marginLeft: 16, color: '#888', fontSize: 15 }}>
-                Rallye: {rallyes.find(r => r.rallye_id === room.rallye_id)?.name || room.rallye_id}
+                Rallye: {rallyes.find(r => r.id === room.rallye_id)?.name || room.rallye_id}
               </span>
               {/* Button zum Löschen */}
               <button className="admin-page-action-btn admin-page-delete-btn" onClick={() => handleDeleteRoom(room.session_id)}>

@@ -69,7 +69,7 @@ const SuperadminPage = () => {
 		if (showSpinner) setLoading(true);
 		setError('');
 		try {
-			const res = await fetch('http://localhost:5000/api/users');
+			const res = await fetch('/api/users');
 			if (!res.ok) throw new Error('Fehler beim Laden der Nutzer');
 			const data = await res.json();
 			setUsers(data.users || []);
@@ -124,7 +124,7 @@ const SuperadminPage = () => {
 			return;
 		}
 		try {
-			const res = await fetch('http://localhost:5000/api/users', {
+			const res = await fetch('/api/users', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ name: formName, role: formRole, password: formPassword })
@@ -151,7 +151,7 @@ const SuperadminPage = () => {
 			if (formName) payload.name = formName;
 			if (formRole) payload.role = formRole;
 			if (formPassword) payload.password = formPassword;
-			const res = await fetch(`http://localhost:5000/api/users/${selectedUserId}`, {
+			const res = await fetch(`/api/users/${selectedUserId}`, {
 				method: 'PATCH',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(payload)
@@ -173,7 +173,7 @@ const SuperadminPage = () => {
 		setActionError('');
 		if (!window.confirm('Diesen Nutzer wirklich löschen?')) return;
 		try {
-			const res = await fetch(`http://localhost:5000/api/users/${userId}`, { method: 'DELETE' });
+			const res = await fetch(`/api/users/${userId}`, { method: 'DELETE' });
 			const data = await res.json();
 			if (!res.ok) {
 				setActionError(data.error || 'Fehler beim Löschen');

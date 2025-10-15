@@ -4,6 +4,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const fs = require('fs');
 const path = require('path');
+const bcrypt = require('bcrypt');
 let Pool;
 try { Pool = require('pg').Pool; } catch (e) { Pool = null; }
 
@@ -12,15 +13,40 @@ const app = express();
 app.use(cors()); // CORS für API erlauben
 app.use(express.json()); // JSON-Body-Parsing
 
+// load sample POIs for fallback (dev)
+let samplePois = [];
+try {
+  const samplePath = path.resolve(__dirname, '..', 'my-app', 'src', 'data', 'pois.sample.json');
+  if (fs.existsSync(samplePath)) {
+    samplePois = JSON.parse(fs.readFileSync(samplePath, 'utf8'));
+    console.log('Loaded sample POIs:', samplePois.length);
+  }
+} catch (e) {
+  console.warn('Could not load sample POIs:', e.message || e);
+}
 
-// Verbindung zur PostgreSQL-Datenbank herstellen
-const pool = new Pool({
-  user: process.env.PGUSER,
-  host: process.env.PGHOST,
-  database: process.env.PGDATABASE,
-  password: process.env.PGPASSWORD,
-  port: process.env.PGPORT ? parseInt(process.env.PGPORT) : 5432, //Fallback auf 5432 wenn PGPORT nicht gesetzt ist
-});
+// Verbindung zur PostgreSQL-Datenbank herstellen (optional)
+let pool = null;
+let dbEnabled = false;
+if (Pool && process.env.PGHOST && process.env.PGDATABASE) {
+  try {
+    pool = new Pool({
+      user: process.env.PGUSER,
+      host: process.env.PGHOST,
+      database: process.env.PGDATABASE,
+      password: process.env.PGPASSWORD,
+      port: process.env.PGPORT ? parseInt(process.env.PGPORT, 10) : 5432,
+      ssl: process.env.PGSSLMODE ? { rejectUnauthorized: process.env.PGSSLMODE !== 'disable' } : false,
+    });
+    dbEnabled = true;
+    console.log('DB pooling enabled');
+  } catch (e) {
+    console.warn('Failed initializing DB pool, continuing without DB:', e.message || e);
+    dbEnabled = false;
+  }
+} else {
+  console.log('DB not enabled (missing pg or env), running with sample data only');
+}
 
 // Gibt alle Nutzer zurück (Nutzerverwaltung)
 app.get('/api/users', async (req, res) => {
@@ -154,10 +180,11 @@ function generateRoomCode(length = 6) {
   return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
 }
 
-app.get('/api/rooms/check/:code', async (req, res) => {
-  if (!dbEnabled) return res.json({ exists: false });
+// Liste aller Rallyes
+app.get('/api/rallyes', async (req, res) => {
+  if (!dbEnabled) return res.json({ rallyes: [] });
   try {
-    const result = await pool.query('SELECT rallye_id, name, beschreibung FROM rallye ORDER BY name ASC');
+    const result = await pool.query('SELECT rallye_id AS id, name, beschreibung FROM rallye ORDER BY name ASC');
     res.json({ rallyes: result.rows });
   } catch (err) {
     console.error(err);
@@ -259,13 +286,24 @@ app.get('/api/group-names', async (req, res) => {
 
 // Prüft, ob eine Session mit Code existiert und offen ist
 app.get('/api/rooms/check/:code', async (req, res) => {
+  if (!dbEnabled) return res.json({ exists: false });
   try {
     const { code } = req.params;
-    const result = await pool.query('SELECT * FROM session WHERE entry_code = $1 AND status = $2', [code, 'offen']);
-    res.json({ exists: result.rows.length > 0 });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Fehler beim Prüfen des Session-Codes' });
+    console.log('[rooms/check] received code=', JSON.stringify(code));
+    const r = await pool.query(
+      `SELECT session_id AS id, rallye_id, TRIM(status) AS status, entry_code AS code
+       FROM session
+       WHERE UPPER(entry_code) = UPPER($1)
+       AND UPPER(TRIM(status)) IN ('OFFEN','OPEN','GESTARTET')
+       LIMIT 1`,
+      [code]
+    );
+    console.log('[rooms/check] db rows=', r.rows.length ? JSON.stringify(r.rows[0]) : 'none');
+    if (r.rows.length > 0) return res.json({ exists: true, rallye_id: r.rows[0].rallye_id, status: r.rows[0].status, code: r.rows[0].code, id: r.rows[0].id });
+    res.json({ exists: false });
+  } catch (e) {
+    console.error('Error in /api/rooms/check:', e);
+    res.status(500).json({ error: 'Fehler beim Prüfen des Raumcodes' });
   }
 });
 

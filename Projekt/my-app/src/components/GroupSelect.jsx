@@ -22,13 +22,13 @@ const GroupSelect = () => {
 
   useEffect(() => {
     // Alle Gruppennamen laden
-    fetch('http://localhost:5000/api/group-names')
+  fetch('/api/group-names')
       .then(res => res.json())
       .then(data => setGroupNames(shuffleArray(data.groupNames || [])))
       .catch(() => setError('Fehler beim Laden der Gruppennamen'));
 
     // Bereits vergebene Gruppen im Raum laden
-    fetch(`http://localhost:5000/api/rooms/${roomCode}/taken-groups`)
+  fetch(`/api/rooms/${roomCode}/taken-groups`)
       .then(res => res.json())
       .then(data => setTakenGroups(data.takenGroups || []))
       .catch(() => {});
@@ -49,7 +49,7 @@ const GroupSelect = () => {
     }
 
     try {
-      const res = await fetch(`http://localhost:5000/api/rooms/${roomCode}/join-group`, {
+  const res = await fetch(`/api/rooms/${roomCode}/join-group`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ groupName: selectedGroup })
