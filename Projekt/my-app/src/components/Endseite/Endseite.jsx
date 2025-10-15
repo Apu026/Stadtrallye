@@ -1,17 +1,19 @@
 import React, { useEffect, useState } from "react";
+import { useParams } from 'react-router-dom';
 import MapBackground from "../MapBackground";
 import "./Endseite.css";
 import TeamSelect from "./TeamSelect";
 import Leaderboard from "./Leaderboard";
 import UserEntry from "./UserEntry";
 
-const API_BASE = (import.meta && import.meta.env && import.meta.env.VITE_API_BASE) || "http://localhost:4000";
+const API_BASE = (import.meta && import.meta.env && import.meta.env.VITE_API_BASE) || "";
 
 export default function Endseite() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [userTeamId, setUserTeamId] = useState(0);
   const [userEntry, setUserEntry] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { roomCode, groupName } = useParams();
   const [sessionId, setSessionId] = useState(null);
 
   useEffect(() => {
@@ -20,8 +22,9 @@ export default function Endseite() {
       setLoading(true);
       try {
         // load sessiongroups and group names
+        const sgUrl = `${API_BASE}/api/sessiongroups${roomCode ? `?roomCode=${encodeURIComponent(roomCode)}` : ''}`;
         const [sgRes, gnRes] = await Promise.all([
-          fetch(`${API_BASE}/api/sessiongroups`),
+          fetch(sgUrl),
           fetch(`${API_BASE}/api/group-names`)
         ]);
         if (!sgRes.ok) throw new Error("Could not load sessiongroups");

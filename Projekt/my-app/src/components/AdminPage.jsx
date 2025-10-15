@@ -18,7 +18,7 @@ const AdminPage = () => {
   // Holt alle Rallyes vom Server
   const fetchRallyes = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/rallyes');
+  const res = await fetch('/api/rallyes');
       const data = await res.json();
       setRallyes(data.rallyes || []);
       if (data.rallyes && data.rallyes.length > 0) setRallyeId(data.rallyes[0].id);
@@ -31,7 +31,7 @@ const AdminPage = () => {
   // Holt alle Räume (offen und geschlossen) vom Server
   const fetchRooms = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/rooms/all');
+  const res = await fetch('/api/rooms/all');
       const data = await res.json();
       setRooms(data.rooms || []);
       setOpenRooms((data.rooms || []).filter(r => r.status === 'offen'));
@@ -54,7 +54,7 @@ const AdminPage = () => {
     setError('');
     setSuccess('');
     try {
-      const res = await fetch('http://localhost:5000/api/rooms', {
+  const res = await fetch('/api/rooms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rallye_id: rallyeId })
@@ -77,7 +77,7 @@ const AdminPage = () => {
     setError('');
     setSuccess('');
     try {
-      const res = await fetch(`http://localhost:5000/api/rooms/${roomId}/close`, {
+  const res = await fetch(`/api/rooms/${roomId}/close`, {
         method: 'PATCH',
       });
       const data = await res.json();
@@ -98,7 +98,7 @@ const AdminPage = () => {
     setSuccess('');
     if (!window.confirm('Soll dieser Raum wirklich gelöscht werden?')) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/rooms/${roomId}`, {
+  const res = await fetch(`/api/rooms/${roomId}`, {
         method: 'DELETE',
       });
       const data = await res.json();
@@ -118,7 +118,7 @@ const AdminPage = () => {
     setError('');
     setSuccess('');
     try {
-      const res = await fetch(`http://localhost:5000/api/rooms/${roomId}/start`, {
+  const res = await fetch(`/api/rooms/${roomId}/start`, {
         method: 'PATCH',
       });
       const data = await res.json();

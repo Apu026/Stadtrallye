@@ -24,7 +24,7 @@ const Startseite = ({ onLogin }) => {
 
     setLoading(true); // Start Ladezustand
     try {
-      const res = await fetch(`http://localhost:5000/api/rooms/check/${roomCode}`);
+  const res = await fetch(`/api/rooms/check/${roomCode}`);
       if (!res.ok) {
         setError(`Serverfehler: ${res.status}`);
         return;

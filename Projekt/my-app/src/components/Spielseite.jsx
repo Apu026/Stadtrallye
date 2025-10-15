@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -64,6 +64,8 @@ function useQuery() {
 export default function Spielseite() {
   const query = useQuery();
   const rallyeId = Number(query.get('rallye_id')) || 1;
+  const navigate = useNavigate();
+  const params = useParams();
 
   const [position, setPosition] = useState(null);
   const [error, setError] = useState(null);
@@ -202,9 +204,29 @@ export default function Spielseite() {
       </MapContainer>
 
       <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 2000 }}>
-        <button onClick={toggleMode} style={{ padding: '8px 10px', borderRadius: 6, border: 'none', background: '#0078d4', color: '#fff', cursor: 'pointer' }}>
-          {mode === 'gps' ? 'Modus: GPS' : 'Modus: WASD'}
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={toggleMode} style={{ padding: '8px 10px', borderRadius: 6, border: 'none', background: '#0078d4', color: '#fff', cursor: 'pointer' }}>
+            {mode === 'gps' ? 'Modus: GPS' : 'Modus: WASD'}
+          </button>
+          <button onClick={async () => {
+            // Attempt to inform server to finish the session for this room if available
+            try {
+              const roomCode = params.roomCode || query.get('room') || query.get('roomCode');
+              if (roomCode) {
+                await fetch(`/api/rooms/${encodeURIComponent(roomCode)}/finish`, { method: 'POST' });
+              }
+            } catch (e) {
+              console.warn('Failed to notify server to finish session', e);
+            }
+            // navigate to endseite using roomCode and optional groupName (from path)
+            const groupName = params.groupName || query.get('groupName') || query.get('group');
+            const rc = params.roomCode || query.get('room') || query.get('roomCode') || '';
+            const path = `/endseite/${encodeURIComponent(rc)}/${encodeURIComponent(groupName || '')}`;
+            navigate(path);
+          }} style={{ padding: '8px 10px', borderRadius: 6, border: 'none', background: '#d9534f', color: '#fff', cursor: 'pointer' }}>
+            Rallye beenden
+          </button>
+        </div>
       </div>
 
       {mode === 'wasd' && (
