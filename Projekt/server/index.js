@@ -288,6 +288,52 @@ app.get("/api/group-names", async (_, res) => {
   }
 });
 
+
+// Punkte hinzufügen, wenn Frage korrekt beantwortet wurde
+app.post("/api/rooms/:roomCode/answer", async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { roomCode } = req.params;
+    const { groupName, correct } = req.body; // korrekt: true/false
+
+    if (correct !== true) return res.json({ success: false, message: "Keine Punkte für falsche Antwort" });
+
+    await client.query("BEGIN");
+
+    // Session-ID holen
+    const s = await client.query("SELECT session_id FROM session WHERE entry_code = $1", [roomCode]);
+    if (s.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Raum nicht gefunden" });
+    }
+    const sessionId = s.rows[0].session_id;
+
+    // Group-ID holen
+    const g = await client.query("SELECT group_id FROM groups WHERE group_name = $1", [groupName]);
+    if (g.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Gruppe nicht gefunden" });
+    }
+    const groupId = g.rows[0].group_id;
+
+    // Punkte updaten
+    const r = await client.query(
+      "UPDATE sessiongroups SET points = points + 100 WHERE session_id = $1 AND group_id = $2 RETURNING points",
+      [sessionId, groupId]
+    );
+
+    await client.query("COMMIT");
+    res.json({ success: true, newPoints: r.rows[0].points });
+  } catch (e) {
+    await client.query("ROLLBACK");
+    console.error("Fehler beim Punkte hinzufügen:", e);
+    res.status(500).json({ error: "Fehler beim Punkte hinzufügen" });
+  } finally {
+    client.release();
+  }
+});
+
+
 // -------------------- Serverstart --------------------
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`✅ Server läuft auf Port ${PORT}`));
