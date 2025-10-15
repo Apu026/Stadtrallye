@@ -24,7 +24,7 @@ const WaitingRoom = () => {
             const rallyeRes = await fetch(`http://localhost:5000/api/rallyes`);
             const rallyeData = await rallyeRes.json();
             if (rallyeRes.ok && rallyeData.rallyes) {
-              const rallye = rallyeData.rallyes.find(r => r.id === rallyeId);
+              const rallye = rallyeData.rallyes.find(r => r.rallye_id === rallyeId);
               if (rallye) setRallyeName(rallye.name);
             }
           }

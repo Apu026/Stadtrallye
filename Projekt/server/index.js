@@ -26,7 +26,7 @@ const pool = new Pool({
 // Gibt alle Nutzer zurück (Nutzerverwaltung)
 app.get('/api/users', async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, username, role FROM users ORDER BY username ASC');
+    const result = await pool.query('SELECT user_id, name, role FROM users ORDER BY name ASC');
     res.json({ users: result.rows });
   } catch (err) {
     console.error(err);
@@ -39,11 +39,11 @@ app.get('/api/users', async (req, res) => {
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
   try {
-    const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+    const result = await pool.query('SELECT * FROM users WHERE name = $1', [username]);
     if (result.rows.length === 0) return res.status(401).json({ error: 'User not found' });
 
     const user = result.rows[0];
-    const valid = await bcrypt.compare(password, user.password_hash);
+    const valid = await bcrypt.compare(password, user.password);
     if (!valid) return res.status(401).json({ error: 'Wrong password' });
 
     res.json({ success: true, role: user.role });
@@ -67,7 +67,7 @@ function generateRoomCode(length = 6) {
 // Gibt alle Rallyes zurück (für das Frontend)
 app.get('/api/rallyes', async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, name FROM rallyes ORDER BY name ASC');
+    const result = await pool.query('SELECT rallye_id, name, beschreibung FROM rallye ORDER BY name ASC');
     res.json({ rallyes: result.rows });
   } catch (err) {
     console.error(err);
@@ -75,14 +75,14 @@ app.get('/api/rallyes', async (req, res) => {
   }
 });
 
-// Erstellt einen neuen Raum
+// Erstellt eine neue Session (Raum)
 app.post('/api/rooms', async (req, res) => {
   try {
     let code;
     let exists = true;
     while (exists) {
       code = generateRoomCode();
-      const check = await pool.query('SELECT 1 FROM rooms WHERE code = $1', [code]);
+      const check = await pool.query('SELECT 1 FROM session WHERE entry_code = $1', [code]);
       exists = check.rows.length > 0;
     }
     const { rallye_id } = req.body;
@@ -90,115 +90,122 @@ app.post('/api/rooms', async (req, res) => {
       return res.status(400).json({ error: 'rallye_id ist erforderlich' });
     }
     const result = await pool.query(
-      'INSERT INTO rooms (code, status, rallye_id) VALUES ($1, $2, $3) RETURNING *',
+      'INSERT INTO session (entry_code, status, rallye_id) VALUES ($1, $2, $3) RETURNING *',
       [code, 'offen', rallye_id]
     );
     res.json({ room: result.rows[0] });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Fehler beim Erstellen des Raums' });
+    res.status(500).json({ error: 'Fehler beim Erstellen der Session' });
   }
 });
 
 
-// Gibt alle offenen Räume zurück
+// Gibt alle offenen Sessions zurück
 app.get('/api/rooms', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM rooms WHERE status = $1 ORDER BY created_at DESC', ['offen']);
+    const result = await pool.query('SELECT * FROM session WHERE status = $1', ['offen']);
     res.json({ rooms: result.rows });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Fehler beim Laden der Räume' });
+    res.status(500).json({ error: 'Fehler beim Laden der Sessions' });
   }
 });
 
-// Gibt alle Räume zurück (offen und geschlossen)
+// Gibt alle Sessions zurück (offen und geschlossen)
 app.get('/api/rooms/all', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM rooms ORDER BY created_at DESC');
+    const result = await pool.query('SELECT * FROM session');
     res.json({ rooms: result.rows });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Fehler beim Laden aller Räume' });
+    res.status(500).json({ error: 'Fehler beim Laden aller Sessions' });
   }
 });
 
-// Schließt einen Raum (Status auf "geschlossen", closed_at setzen)
+// Schließt eine Session (Status auf "geschlossen")
 app.patch('/api/rooms/:id/close', async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query(
-      'UPDATE rooms SET status = $1, closed_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
+      'UPDATE session SET status = $1 WHERE session_id = $2 RETURNING *',
       ['geschlossen', id]
     );
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Raum nicht gefunden' });
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Session nicht gefunden' });
     res.json({ room: result.rows[0] });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Fehler beim Schließen des Raums' });
+    res.status(500).json({ error: 'Fehler beim Schließen der Session' });
   }
 });
 
 
-// Löscht einen Raum anhand der ID
+// Löscht eine Session anhand der ID
 app.delete('/api/rooms/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query('DELETE FROM rooms WHERE id = $1 RETURNING *', [id]);
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Raum nicht gefunden' });
+    // Zuerst alle zugehörigen sessiongroups-Einträge löschen
+    await pool.query('DELETE FROM sessiongroups WHERE session_id = $1', [id]);
+    // Dann die Session selbst löschen
+    const result = await pool.query('DELETE FROM session WHERE session_id = $1 RETURNING *', [id]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Session nicht gefunden' });
     res.json({ success: true, deletedRoom: result.rows[0] });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Fehler beim Löschen des Raums' });
+    res.status(500).json({ error: 'Fehler beim Löschen der Session' });
   }
 });
 
-// Gibt alle Gruppennamen zurück
+// Gibt alle Gruppen zurück
 app.get('/api/group-names', async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, name FROM group_names ORDER BY name ASC');
+    const result = await pool.query('SELECT group_id, group_name FROM groups ORDER BY group_name ASC');
     res.json({ groupNames: result.rows });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Fehler beim Laden der Gruppennamen' });
+    res.status(500).json({ error: 'Fehler beim Laden der Gruppen' });
   }
 });
 
-// Prüft, ob ein Raum mit Code existiert und offen ist
+// Prüft, ob eine Session mit Code existiert und offen ist
 app.get('/api/rooms/check/:code', async (req, res) => {
   try {
     const { code } = req.params;
-    const result = await pool.query('SELECT * FROM rooms WHERE code = $1 AND status = $2', [code, 'offen']);
+    const result = await pool.query('SELECT * FROM session WHERE entry_code = $1 AND status = $2', [code, 'offen']);
     res.json({ exists: result.rows.length > 0 });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Fehler beim Prüfen des Raum-Codes' });
+    res.status(500).json({ error: 'Fehler beim Prüfen des Session-Codes' });
   }
 });
 
-// Gibt Raum-Info per Code zurück (z.B. für Warteseite)
+// Gibt Session-Info per Code zurück (z.B. für Warteseite)
 app.get('/api/rooms/code/:code', async (req, res) => {
   try {
     const { code } = req.params;
-    const result = await pool.query('SELECT * FROM rooms WHERE code = $1', [code]);
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Raum nicht gefunden' });
+    const result = await pool.query('SELECT * FROM session WHERE entry_code = $1', [code]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Session nicht gefunden' });
     res.json({ room: result.rows[0] });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Fehler beim Laden des Raums' });
+    res.status(500).json({ error: 'Fehler beim Laden der Session' });
   }
 });
 
-// Gibt alle vergebenen Gruppennamen für einen Raum zurück
+// Gibt alle vergebenen Gruppennamen für eine Session zurück
 app.get('/api/rooms/:roomCode/taken-groups', async (req, res) => {
   try {
     const { roomCode } = req.params;
-    // Hole die room_id zum Code
-    const roomResult = await pool.query('SELECT id FROM rooms WHERE code = $1', [roomCode]);
-    if (roomResult.rows.length === 0) return res.status(404).json({ error: 'Raum nicht gefunden' });
-    const roomId = roomResult.rows[0].id;
-    // Hole alle vergebenen Gruppennamen für diesen Raum
-    const takenResult = await pool.query('SELECT group_name FROM room_groups WHERE room_id = $1', [roomId]);
+    // Hole die session_id zum Code
+    const sessionResult = await pool.query('SELECT session_id FROM session WHERE entry_code = $1', [roomCode]);
+    if (sessionResult.rows.length === 0) return res.status(404).json({ error: 'Session nicht gefunden' });
+    const sessionId = sessionResult.rows[0].session_id;
+    // Hole alle vergebenen Gruppennamen für diese Session über sessiongroups
+    const takenResult = await pool.query(`
+      SELECT g.group_name FROM groups g
+      JOIN sessiongroups sg ON g.group_id = sg.group_id
+      WHERE sg.session_id = $1
+    `, [sessionId]);
     const takenGroups = takenResult.rows.map(row => row.group_name);
     res.json({ takenGroups });
   } catch (err) {
@@ -207,41 +214,56 @@ app.get('/api/rooms/:roomCode/taken-groups', async (req, res) => {
   }
 });
 
-// Spieler tritt einer Gruppe in einem Raum bei
+// Spieler tritt einer Gruppe in einer Session bei
 app.post('/api/rooms/:roomCode/join-group', async (req, res) => {
   try {
     const { roomCode } = req.params;
     const { groupName } = req.body;
     if (!groupName) return res.status(400).json({ error: 'Gruppenname fehlt' });
-    // Hole die room_id zum Code
-    const roomResult = await pool.query('SELECT id FROM rooms WHERE code = $1', [roomCode]);
-    if (roomResult.rows.length === 0) return res.status(404).json({ error: 'Raum nicht gefunden' });
-    const roomId = roomResult.rows[0].id;
-    // Prüfe, ob der Gruppenname schon vergeben ist
-    const taken = await pool.query('SELECT 1 FROM room_groups WHERE room_id = $1 AND group_name = $2', [roomId, groupName]);
-    if (taken.rows.length > 0) return res.status(409).json({ error: 'Gruppenname bereits vergeben' });
-    // Eintrag anlegen
-    await pool.query('INSERT INTO room_groups (room_id, group_name) VALUES ($1, $2)', [roomId, groupName]);
-    res.json({ success: true });
+  // Hole die session_id zum Code
+  const sessionResult = await pool.query('SELECT session_id FROM session WHERE entry_code = $1', [roomCode]);
+  if (sessionResult.rows.length === 0) return res.status(404).json({ error: 'Session nicht gefunden' });
+  const sessionId = sessionResult.rows[0].session_id;
+  // Prüfe, ob der Gruppenname schon vergeben ist (über sessiongroups)
+  const groupResult = await pool.query('SELECT group_id FROM groups WHERE group_name = $1', [groupName]);
+  if (groupResult.rows.length === 0) return res.status(404).json({ error: 'Gruppe nicht gefunden' });
+  const groupId = groupResult.rows[0].group_id;
+  const taken = await pool.query('SELECT 1 FROM sessiongroups WHERE session_id = $1 AND group_id = $2', [sessionId, groupId]);
+  if (taken.rows.length > 0) return res.status(409).json({ error: 'Gruppenname bereits vergeben' });
+  // Eintrag anlegen
+  await pool.query('INSERT INTO sessiongroups (session_id, group_id) VALUES ($1, $2)', [sessionId, groupId]);
+  res.json({ success: true });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Fehler beim Beitreten zur Gruppe' });
   }
 });
 
-// Setzt den Status eines Raums auf 'gestartet'
+// Setzt den Status einer Session auf 'gestartet'
 app.patch('/api/rooms/:id/start', async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query(
-      'UPDATE rooms SET status = $1 WHERE id = $2 RETURNING *',
+      'UPDATE session SET status = $1 WHERE session_id = $2 RETURNING *',
       ['gestartet', id]
     );
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Raum nicht gefunden' });
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Session nicht gefunden' });
     res.json({ room: result.rows[0] });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Fehler beim Starten der Rallye' });
+    res.status(500).json({ error: 'Fehler beim Starten der Session' });
+  }
+});
+
+// Gibt die rallye_id einer Session per entry_code zurück
+app.get('/api/rooms/:code/rallye-id', async (req, res) => {
+  try {
+    const { code } = req.params;
+    const result = await pool.query('SELECT rallye_id FROM session WHERE entry_code = $1', [code]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Session nicht gefunden' });
+    res.json({ rallye_id: result.rows[0].rallye_id });
+  } catch (err) {
+    res.status(500).json({ error: 'Fehler beim Abrufen der Rallye-ID' });
   }
 });
 

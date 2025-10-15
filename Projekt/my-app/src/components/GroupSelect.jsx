@@ -70,21 +70,23 @@ const GroupSelect = () => {
       <h2>Gruppennamen wählen</h2>
       <form onSubmit={handleSubmit}>
         <div className="groupselect-grid">
-          {groupNames.map((name) => {
-            const isTaken = takenGroups.includes(name.name);
-            const isSelected = selectedGroup === name.name;
+          {groupNames.map((group, idx) => {
+            const isTaken = takenGroups.includes(group.group_name);
+            const isSelected = selectedGroup === group.group_name;
             let btnClass = 'groupselect-btn';
             if (isTaken) btnClass += ' taken';
             if (isSelected) btnClass += ' selected';
+            // Nutze group_id, dann group_name, dann Index als Fallback für key
+            const key = group.group_id || group.group_name || idx;
             return (
               <button
-                key={name.id}
+                key={key}
                 type="button"
-                onClick={() => !isTaken && handleSelect(name.name)}
+                onClick={() => !isTaken && handleSelect(group.group_name)}
                 disabled={isTaken}
                 className={btnClass}
               >
-                {name.name}
+                {group.group_name}
               </button>
             );
           })}

@@ -72,9 +72,16 @@ const SuperadminPage = () => {
 		}
 	};
 
-	React.useEffect(() => {
-		if (drawerOpen) fetchUsers();
-	}, [drawerOpen]);
+		React.useEffect(() => {
+			let interval;
+			if (drawerOpen) {
+				fetchUsers();
+				interval = setInterval(() => {
+					fetchUsers();
+				}, 5000); // alle 5 Sekunden
+			}
+			return () => clearInterval(interval);
+		}, [drawerOpen]);
 
 	return (
 		<>
@@ -95,45 +102,45 @@ const SuperadminPage = () => {
 							</tr>
 						</thead>
 						<tbody>
-							{users.map((user) => (
-								<tr key={user.id} style={{ borderBottom: '1px solid #eee' }}>
-									<td style={{ padding: window.innerWidth <= 600 ? 6 : 14, textAlign: 'left' }}>{user.username}</td>
-									<td style={{ padding: window.innerWidth <= 600 ? 6 : 14, textAlign: 'left' }}>{user.role}</td>
-									<td style={{ padding: window.innerWidth <= 600 ? 6 : 14, textAlign: 'left' }}>
-										<button
-											style={{
-												marginRight: window.innerWidth <= 600 ? 4 : 10,
-												background: '#083163',
-												color: '#fff',
-												border: 'none',
-												borderRadius: 6,
-												padding: window.innerWidth <= 600 ? '10px 10px' : '14px 20px',
-												fontSize: window.innerWidth <= 600 ? 18 : 22,
-												cursor: 'pointer'
-											}}
-											title="Bearbeiten"
-											onClick={() => alert('Bearbeiten kommt noch!')}
-										>
-											✏️
-										</button>
-										<button
-											style={{
-												background: '#ff4136',
-												color: '#fff',
-												border: 'none',
-												borderRadius: 6,
-												padding: window.innerWidth <= 600 ? '10px 10px' : '14px 20px',
-												fontSize: window.innerWidth <= 600 ? 18 : 22,
-												cursor: 'pointer'
-											}}
-											title="Löschen"
-											onClick={() => alert('Löschen kommt noch!')}
-										>
-											🗑️
-										</button>
-									</td>
-								</tr>
-							))}
+											{users.map((user) => (
+												<tr key={user.user_id} style={{ borderBottom: '1px solid #eee' }}>
+													<td style={{ padding: window.innerWidth <= 600 ? 6 : 14, textAlign: 'left' }}>{user.name}</td>
+													<td style={{ padding: window.innerWidth <= 600 ? 6 : 14, textAlign: 'left' }}>{user.role}</td>
+													<td style={{ padding: window.innerWidth <= 600 ? 6 : 14, textAlign: 'left' }}>
+														<button
+															style={{
+																marginRight: window.innerWidth <= 600 ? 4 : 10,
+																background: '#083163',
+																color: '#fff',
+																border: 'none',
+																borderRadius: 6,
+																padding: window.innerWidth <= 600 ? '10px 10px' : '14px 20px',
+																fontSize: window.innerWidth <= 600 ? 18 : 22,
+																cursor: 'pointer'
+															}}
+															title="Bearbeiten"
+															onClick={() => alert('Bearbeiten kommt noch!')}
+														>
+															✏️
+														</button>
+														<button
+															style={{
+																background: '#ff4136',
+																color: '#fff',
+																border: 'none',
+																borderRadius: 6,
+																padding: window.innerWidth <= 600 ? '10px 10px' : '14px 20px',
+																fontSize: window.innerWidth <= 600 ? 18 : 22,
+																cursor: 'pointer'
+															}}
+															title="Löschen"
+															onClick={() => alert('Löschen kommt noch!')}
+														>
+															🗑️
+														</button>
+													</td>
+												</tr>
+											))}
 						</tbody>
 					</table>
 				)}
