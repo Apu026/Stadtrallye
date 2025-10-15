@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import './WaitingRoom.css';
@@ -12,31 +11,51 @@ const WaitingRoom = () => {
 
   useEffect(() => {
     let rallyeId = null;
-    // Polling: Prüfe alle 3 Sekunden, ob die Rallye gestartet wurde
+
     const fetchRoomAndRallye = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/rooms/code/${roomCode}`);
+        const res = await fetch(`http://localhost:5000/api/rooms/check/${roomCode}`);
         const data = await res.json();
-        if (res.ok && data.room) {
-          rallyeId = data.room.rallye_id;
+
+        if (!res.ok) {
+          setError('Serverfehler beim Prüfen des Raums');
+          return;
+        }
+
+        if (!data.exists) {
+          setError('Raum existiert nicht oder ist nicht offen');
+          return;
+        }
+
+        // Raum existiert
+        rallyeId = data.rallye_id;
+
+        if (!rallyeId) {
+          setError('Rallye-ID fehlt für diesen Raum');
+        } else {
           // Hole Rallye-Namen
-          if (rallyeId) {
-            const rallyeRes = await fetch(`http://localhost:5000/api/rallyes`);
-            const rallyeData = await rallyeRes.json();
-            if (rallyeRes.ok && rallyeData.rallyes) {
-              const rallye = rallyeData.rallyes.find(r => r.id === rallyeId);
-              if (rallye) setRallyeName(rallye.name);
-            }
-          }
-          if (data.room.status === 'gestartet') {
-            setStarted(true);
-            navigate(`/spiel/${roomCode}/${groupName}`);
+          const rallyeRes = await fetch(`http://localhost:5000/api/rallyes`);
+          const rallyeData = await rallyeRes.json();
+          if (rallyeRes.ok && rallyeData.rallyes) {
+            const rallye = rallyeData.rallyes.find(r => r.id === rallyeId);
+            if (rallye) setRallyeName(rallye.name);
           }
         }
+
+        // Prüfe Status
+        if (data.status === 'gestartet') {
+          setStarted(true);
+          navigate(`/spiel/${roomCode}/${groupName}?rallye_id=${rallyeId}`);
+        } else {
+          setStarted(false);
+          setError('Warten auf Start der Rallye...');
+        }
       } catch (err) {
-        setError('Fehler beim Prüfen des Raum-Status');
+        console.error(err);
+        setError('Fehler beim Prüfen des Raums');
       }
     };
+
     fetchRoomAndRallye();
     const interval = setInterval(fetchRoomAndRallye, 3000);
     return () => clearInterval(interval);
@@ -47,15 +66,13 @@ const WaitingRoom = () => {
       <div className="waitingroom-container">
         <div className="waitingroom-title">Warten auf Start…</div>
         <div className="waitingroom-info">
-          {rallyeName && (<>
-            Rallye: <b>{rallyeName}</b><br />
-          </>)}
+          {rallyeName && <>Rallye: <b>{rallyeName}</b><br /></>}
           Gruppenname: <b>{groupName}</b><br />
           Raum-Code: <b>{roomCode}</b>
         </div>
         <div className="waitingroom-info">Bitte warten, bis der Admin die Rallye startet.</div>
-  <div className="waitingroom-spinner" />
-  {error && <div style={{ color: 'red', marginTop: 10 }}>{error}</div>}
+        <div className="waitingroom-spinner" />
+        {error && <div style={{ color: error.includes('Fehler') ? 'red' : 'orange', marginTop: 10 }}>{error}</div>}
       </div>
     </div>
   );
