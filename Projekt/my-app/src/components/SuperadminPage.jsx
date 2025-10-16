@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import './SuperadminPage.css';
 import managementIcon from '../assets/management.png';
+import editIcon from '../assets/edit-pencil.png';
+import deleteIcon from '../assets/trash-bin.png';
 
 // User-Icon als <span> wie auf der Startseite
 const UserIcon = ({ onClick }) => (
@@ -263,7 +265,7 @@ const SuperadminPage = () => {
 															title="Bearbeiten"
 															onClick={() => openEdit(user)}
 														>
-															✏️
+															<img src={editIcon} alt="Bearbeiten" className="sa-action-icon" />
 														</button>
 														<button
 															style={{
@@ -278,7 +280,7 @@ const SuperadminPage = () => {
 															title="Löschen"
 															onClick={() => handleDeleteUser(user.user_id)}
 														>
-															🗑️
+															<img src={deleteIcon} alt="Löschen" className="sa-action-icon" />
 														</button>
 													</td>
 												</tr>
