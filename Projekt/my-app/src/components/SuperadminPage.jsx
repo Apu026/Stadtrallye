@@ -11,43 +11,14 @@ const UserIcon = ({ onClick }) => (
 		aria-label="Nutzerverwaltung öffnen"
 		onClick={onClick}
 	>
-		<img src={managementIcon} alt="Nutzerverwaltung" style={{ width: 40, height: 40, filter: 'brightness(0) invert(1)' }} />
+		<img src={managementIcon} alt="Nutzerverwaltung" className="sa-user-icon-img" />
 	</span>
 );
 
 const Drawer = ({ open, onClose, children }) => {
-	// Responsive Werte für Drawer
-	const isMobile = window.innerWidth <= 600;
-	const isTablet = window.innerWidth > 600 && window.innerWidth <= 1000;
-	let drawerWidth = '98vw';
-	let maxWidth = 600;
-	if (isMobile) {
-		drawerWidth = '100vw';
-		maxWidth = '100vw';
-	} else if (isTablet) {
-		drawerWidth = '98vw';
-		maxWidth = 700;
-	}
 	return (
-		<div
-			style={{
-				position: 'fixed',
-				top: 0,
-				right: open ? 0 : '-100vw',
-				width: drawerWidth,
-				maxWidth: maxWidth,
-				height: '100vh',
-				background: '#fff',
-				boxShadow: open ? '-2px 0 16px rgba(0,0,0,0.2)' : 'none',
-				zIndex: 1000,
-				transition: 'right 0.3s cubic-bezier(.4,0,.2,1)',
-				display: 'flex',
-				flexDirection: 'column',
-				padding: 0
-			}}
-			aria-hidden={!open}
-		>
-			<div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? 8 : 24 }}>{children}</div>
+		<div className={`sa-drawer ${open ? 'open' : ''}`} aria-hidden={!open}>
+			<div className="sa-drawer-content">{children}</div>
 		</div>
 	);
 };
@@ -191,92 +162,76 @@ const SuperadminPage = () => {
 		<>
 			<UserIcon open={drawerOpen} onClick={() => setDrawerOpen((open) => !open)} />
 			<Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-				<h2 style={{ fontSize: 22, margin: '0 0 16px 0', textAlign: 'center' }}>Nutzerverwaltung</h2>
-				{actionError && <div style={{ color: 'red', marginBottom: 10 }}>{actionError}</div>}
+				<h2 className="sa-title">Nutzerverwaltung</h2>
+				{actionError && <div className="sa-error">{actionError}</div>}
 
 				{/* Create / Edit Form */}
 				{showCreate && (
-					<form onSubmit={handleCreateUser} style={{ background: '#f8f9fb', border: '1px solid #e2e6ea', borderRadius: 8, padding: 12, marginBottom: 16 }}>
-						<div style={{ fontWeight: 600, marginBottom: 8 }}>Neuen Nutzer anlegen</div>
-						<div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-							<input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Benutzername" style={{ flex: '1 1 160px', padding: 8, borderRadius: 6, border: '1px solid #ccc' }} />
-							<select value={formRole} onChange={(e) => setFormRole(e.target.value)} style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc' }}>
+					<form onSubmit={handleCreateUser} className="sa-form">
+						<div className="sa-form-title">Neuen Nutzer anlegen</div>
+						<div className="sa-form-row">
+							<input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Benutzername" className="sa-input" />
+							<select value={formRole} onChange={(e) => setFormRole(e.target.value)} className="sa-select">
 								<option value="superadmin">superadmin</option>
 								<option value="admin">admin</option>
 								<option value="closed">closed</option>
 							</select>
-							<input type="password" value={formPassword} onChange={(e) => setFormPassword(e.target.value)} placeholder="Passwort" style={{ flex: '1 1 160px', padding: 8, borderRadius: 6, border: '1px solid #ccc' }} />
+							<input type="password" value={formPassword} onChange={(e) => setFormPassword(e.target.value)} placeholder="Passwort" className="sa-input" />
 						</div>
-						<div style={{ marginTop: 10, display: 'flex', gap: 8 }}>
-							<button type="submit" style={{ background: '#083163', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 14px', cursor: 'pointer' }}>Anlegen</button>
-							<button type="button" onClick={() => { setShowCreate(false); resetForm(); }} style={{ background: '#888', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 14px', cursor: 'pointer' }}>Abbrechen</button>
+						<div className="sa-actions">
+							<button type="submit" className="sa-btn sa-btn-primary">Anlegen</button>
+							<button type="button" onClick={() => { setShowCreate(false); resetForm(); }} className="sa-btn sa-btn-secondary">Abbrechen</button>
 						</div>
 					</form>
 				)}
 
 				{showEdit && (
-					<form onSubmit={handleUpdateUser} style={{ background: '#f8f9fb', border: '1px solid #e2e6ea', borderRadius: 8, padding: 12, marginBottom: 16 }}>
-						<div style={{ fontWeight: 600, marginBottom: 8 }}>Nutzer bearbeiten</div>
-						<div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-							<input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Benutzername" style={{ flex: '1 1 160px', padding: 8, borderRadius: 6, border: '1px solid #ccc' }} />
-							<select value={formRole} onChange={(e) => setFormRole(e.target.value)} style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc' }}>
+					<form onSubmit={handleUpdateUser} className="sa-form">
+						<div className="sa-form-title">Nutzer bearbeiten</div>
+						<div className="sa-form-row">
+							<input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Benutzername" className="sa-input" />
+							<select value={formRole} onChange={(e) => setFormRole(e.target.value)} className="sa-select">
 								<option value="superadmin">superadmin</option>
 								<option value="admin">admin</option>
 								<option value="closed">closed</option>
 							</select>
-							<input type="password" value={formPassword} onChange={(e) => setFormPassword(e.target.value)} placeholder="Neues Passwort (optional)" style={{ flex: '1 1 220px', padding: 8, borderRadius: 6, border: '1px solid #ccc' }} />
+							<input type="password" value={formPassword} onChange={(e) => setFormPassword(e.target.value)} placeholder="Neues Passwort (optional)" className="sa-input sa-input-wide" />
 						</div>
-						<div style={{ marginTop: 10, display: 'flex', gap: 8 }}>
-							<button type="submit" style={{ background: '#083163', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 14px', cursor: 'pointer' }}>Speichern</button>
-							<button type="button" onClick={() => { setShowEdit(false); resetForm(); }} style={{ background: '#888', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 14px', cursor: 'pointer' }}>Abbrechen</button>
+						<div className="sa-actions">
+							<button type="submit" className="sa-btn sa-btn-primary">Speichern</button>
+							<button type="button" onClick={() => { setShowEdit(false); resetForm(); }} className="sa-btn sa-btn-secondary">Abbrechen</button>
 						</div>
 					</form>
 				)}
 				{loading ? (
 					<div>Lade Nutzer...</div>
 				) : error ? (
-					<div style={{ color: 'red' }}>{error}</div>
+					<div className="sa-error">{error}</div>
 				) : (
-					<table style={{ width: '100%', borderCollapse: 'collapse', fontSize: window.innerWidth <= 600 ? 15 : window.innerWidth <= 1000 ? 17 : 20 }}>
+				  <div className="sa-table-wrap">
+					<table className="superadmin-table">
 						<thead>
-							<tr style={{ background: '#f5f5f5' }}>
-								<th style={{ padding: window.innerWidth <= 600 ? 6 : 14, textAlign: 'left' }}>Benutzername</th>
-								<th style={{ padding: window.innerWidth <= 600 ? 6 : 14, textAlign: 'left' }}>Rolle</th>
-								<th style={{ padding: window.innerWidth <= 600 ? 6 : 14, textAlign: 'left' }}></th>
+							<tr>
+								<th>Benutzername</th>
+								<th>Rolle</th>
+								<th></th>
 							</tr>
 						</thead>
 						<tbody>
 											{users.map((user) => (
-												<tr key={user.user_id} style={{ borderBottom: '1px solid #eee' }}>
-													<td style={{ padding: window.innerWidth <= 600 ? 6 : 14, textAlign: 'left' }}>{user.name}</td>
-													<td style={{ padding: window.innerWidth <= 600 ? 6 : 14, textAlign: 'left' }}>{user.role}</td>
-													<td style={{ padding: window.innerWidth <= 600 ? 6 : 14, textAlign: 'left' }}>
+												<tr key={user.user_id}>
+													<td>{user.name}</td>
+													<td>{user.role}</td>
+													<td>
 														<button
-															style={{
-																marginRight: window.innerWidth <= 600 ? 4 : 10,
-																background: '#083163',
-																color: '#fff',
-																border: 'none',
-																borderRadius: 6,
-																padding: window.innerWidth <= 600 ? '10px 10px' : '14px 20px',
-																fontSize: window.innerWidth <= 600 ? 18 : 22,
-																cursor: 'pointer'
-															}}
+															className="sa-btn sa-btn-primary sa-action-btn"
 															title="Bearbeiten"
 															onClick={() => openEdit(user)}
 														>
 															<img src={editIcon} alt="Bearbeiten" className="sa-action-icon" />
 														</button>
 														<button
-															style={{
-																background: '#ff4136',
-																color: '#fff',
-																border: 'none',
-																borderRadius: 6,
-																padding: window.innerWidth <= 600 ? '10px 10px' : '14px 20px',
-																fontSize: window.innerWidth <= 600 ? 18 : 22,
-																cursor: 'pointer'
-															}}
+															className="sa-btn sa-btn-danger sa-action-btn"
 															title="Löschen"
 															onClick={() => handleDeleteUser(user.user_id)}
 														>
@@ -287,21 +242,10 @@ const SuperadminPage = () => {
 											))}
 						</tbody>
 					</table>
+				  </div>
 				)}
-						<div style={{ textAlign: 'center', marginTop: 28 }}>
-							<button
-								style={{
-									background: '#083163',
-									color: '#fff',
-									border: 'none',
-									borderRadius: 6,
-									padding: window.innerWidth <= 600 ? '14px 18px' : '18px 32px',
-									fontSize: window.innerWidth <= 600 ? 18 : 24,
-									cursor: 'pointer',
-									fontWeight: 600
-								}}
-								onClick={() => openCreate()}
-							>
+						<div className="sa-footer">
+							<button className="sa-btn sa-btn-primary sa-cta-btn" onClick={() => openCreate()}>
 								+ Nutzer anlegen
 							</button>
 						</div>
