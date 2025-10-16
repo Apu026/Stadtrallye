@@ -1,5 +1,6 @@
 // React und CSS importieren
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './AdminPage.css';
 
 // Admin-Oberfläche für Räume und Rallyes
@@ -141,6 +142,7 @@ const AdminPage = () => {
     }
   };  
 
+  const navigate = useNavigate();
   // Das UI der Admin-Seite
   return (
     <div className="admin-page-container">
@@ -166,6 +168,11 @@ const AdminPage = () => {
       <button className="admin-page-create-btn" onClick={handleCreateRoom} disabled={creating}>
         {creating ? 'Erstelle...' : 'Raum erstellen'}
       </button>
+      <div style={{ marginTop: 12 }}>
+        <button className="admin-page-create-btn admin-page-poi-btn" onClick={() => navigate('/admin/poi-erstellen')}>
+          Zur POI-Erstellen-Seite
+        </button>
+      </div>
 
       {/* Liste der offenen Räume */}
       <div style={{ marginTop: 36 }}>
