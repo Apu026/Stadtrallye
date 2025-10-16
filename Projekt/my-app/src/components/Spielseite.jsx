@@ -76,6 +76,7 @@ export default function Spielseite() {
 
   const mapRef = useRef(null);
   const geoWatchRef = useRef(null);
+  const positionRef = useRef(null);
 
   const activePoi = pois[index] || null;
 
@@ -120,6 +121,70 @@ export default function Spielseite() {
       }
     };
   }, [mode]);
+
+  // Keep a ref with the latest position for steady interval uploads
+  useEffect(() => {
+    positionRef.current = position;
+  }, [position]);
+
+  // Push immediately once we have a fresh position (no need to wait up to 30s)
+  useEffect(() => {
+    async function pushOnce() {
+      try {
+        if (!position) return;
+        const rc = params.roomCode || query.get('room') || query.get('roomCode');
+        const gn = params.groupName || query.get('groupName') || query.get('group');
+        if (!rc || !gn) return;
+        const body = { roomCode: rc, groupName: gn, lat: position[0], long: position[1] };
+        const resp = await fetch('/api/sessiongroups/location', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        if (!resp.ok) {
+          const t = await resp.text();
+          console.warn('Location upload (immediate) failed', resp.status, t);
+        } else {
+          console.debug('Location upload (immediate) ok');
+        }
+      } catch (e) {
+        console.warn('Location upload (immediate) error', e);
+      }
+    }
+    pushOnce();
+  }, [position]);
+
+  // Periodically upload player coordinates to DB every 30 seconds
+  useEffect(() => {
+    let timer = null;
+    const rc = params.roomCode || query.get('room') || query.get('roomCode');
+    const gn = params.groupName || query.get('groupName') || query.get('group');
+    async function pushLocation() {
+      try {
+        const pos = positionRef.current;
+        if (!rc || !gn || !pos) return;
+        const body = { roomCode: rc, groupName: gn, lat: pos[0], long: pos[1] };
+        const resp = await fetch('/api/sessiongroups/location', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        if (!resp.ok) {
+          const t = await resp.text();
+          console.warn('Location upload failed', resp.status, t);
+        } else {
+          console.debug('Location upload ok');
+        }
+      } catch (e) {
+        // best-effort, ignore errors
+        console.warn('Location upload error', e);
+      }
+    }
+    // initial send and then every 10 seconds
+    pushLocation();
+    timer = setInterval(pushLocation, 10000);
+    return () => { if (timer) clearInterval(timer); };
+  }, [params.roomCode, params.groupName]);
 
   // WASD-Modus
   useEffect(() => {

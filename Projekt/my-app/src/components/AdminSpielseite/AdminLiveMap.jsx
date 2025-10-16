@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Polyline, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './AdminSpielseite.css';
@@ -14,6 +14,13 @@ L.Icon.Default.mergeOptions({ iconRetinaUrl, iconUrl, shadowUrl });
 
 const redIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+  shadowUrl,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
+
+const greenIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
   shadowUrl,
   iconSize: [25, 41],
   iconAnchor: [12, 41],
@@ -35,7 +42,10 @@ export default function AdminLiveMap() {
   const routeTimer = useRef(null);
   const playersTimer = useRef(null);
   const pointsTimer = useRef(null);
+  const locationTimer = useRef(null);
   const [points, setPoints] = useState(null);
+  const [playerLocation, setPlayerLocation] = useState(null); // [lat, long]
+  const mapRef = useRef(null);
 
   // Load POIs (admin page endpoint returns array)
   useEffect(() => {
@@ -115,6 +125,29 @@ export default function AdminLiveMap() {
     }
   };
 
+  // Fetch only location (lat/long) for selected player
+  const fetchLocation = async (code, groupId) => {
+    if (!code || !groupId) { setPlayerLocation(null); return; }
+    try {
+      const res = await fetch(`${API_BASE}/api/sessiongroups?roomCode=${encodeURIComponent(code)}`);
+      if (!res.ok) { setPlayerLocation(null); return; }
+      const body = await res.json();
+      const sgs = Array.isArray(body) ? body : (body.sessiongroups || []);
+      const row = sgs.find(s => String(s.group_id) === String(groupId));
+      if (row && row.lat != null && row.long != null) {
+        const latNum = Number(row.lat);
+        const lonNum = Number(row.long);
+        if (!Number.isNaN(latNum) && !Number.isNaN(lonNum)) {
+          setPlayerLocation([latNum, lonNum]);
+          return;
+        }
+      }
+      setPlayerLocation(null);
+    } catch (e) {
+      setPlayerLocation(null);
+    }
+  };
+
   // Poll points every 10 seconds for selected player
   useEffect(() => {
     if (!roomCode || !selectedPlayer) { if (pointsTimer.current) clearInterval(pointsTimer.current); setPoints(null); return; }
@@ -125,17 +158,37 @@ export default function AdminLiveMap() {
     return () => { if (pointsTimer.current) clearInterval(pointsTimer.current); };
   }, [roomCode, selectedPlayer]);
 
+  // Poll location every 30 seconds for selected player (throttled)
+  useEffect(() => {
+    if (!roomCode || !selectedPlayer) { if (locationTimer.current) clearInterval(locationTimer.current); setPlayerLocation(null); return; }
+    // initial fetch
+    fetchLocation(roomCode, selectedPlayer.id);
+  if (locationTimer.current) clearInterval(locationTimer.current);
+  locationTimer.current = setInterval(() => fetchLocation(roomCode, selectedPlayer.id), 10000);
+    return () => { if (locationTimer.current) clearInterval(locationTimer.current); };
+  }, [roomCode, selectedPlayer]);
+
   const center = useMemo(() => {
+    if (playerLocation && playerLocation.length === 2) return [playerLocation[0], playerLocation[1]];
     if (route.length > 0) return [Number(route[route.length - 1].lat) || 52.52, Number(route[route.length - 1].lng) || 13.405];
     if (pois[0]?.lat && pois[0]?.lng) return [Number(pois[0].lat), Number(pois[0].lng)];
     return [52.52, 13.405];
-  }, [route, pois]);
+  }, [route, pois, playerLocation]);
+
+  // Fly to live location when it updates
+  useEffect(() => {
+    try {
+      if (mapRef.current && playerLocation && playerLocation.length === 2) {
+        mapRef.current.flyTo(playerLocation, mapRef.current.getZoom(), { duration: 0.5 });
+      }
+    } catch {}
+  }, [playerLocation]);
 
   return (
     <div className="admin-shell">
       {/* Fullscreen map background */}
       <div id="admin-map-root">
-        <MapContainer center={center} zoom={14} style={{ width: '100%', height: '100%' }}>
+        <MapContainer center={center} zoom={14} style={{ width: '100%', height: '100%' }} whenCreated={(m) => { mapRef.current = m; }}>
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
           {/* POIs as red markers */}
           {pois.map(p => (
@@ -147,6 +200,16 @@ export default function AdminLiveMap() {
               <Polyline positions={route.map(r => [Number(r.lat), Number(r.lng)])} pathOptions={{ color: '#0078d4', weight: 4 }} />
               <Marker position={[Number(route[route.length - 1].lat), Number(route[route.length - 1].lng)]} />
             </>
+          )}
+          {/* Live player location (if available) */}
+          {playerLocation && (
+            <Marker position={playerLocation} icon={greenIcon}>
+              {selectedPlayer && (
+                <Tooltip direction="top" offset={[0, -10]} opacity={1} permanent={false} sticky>
+                  {selectedPlayer.name}
+                </Tooltip>
+              )}
+            </Marker>
           )}
         </MapContainer>
       </div>
@@ -207,6 +270,7 @@ export default function AdminLiveMap() {
             <hr />
             <h4 style={{ margin: '8px 0' }}>Route von {selectedPlayer.name}</h4>
             <div className="small">Punkte: {points != null ? points : '—'}</div>
+            <div className="small">Live-Position: {playerLocation ? `${playerLocation[0].toFixed(5)}, ${playerLocation[1].toFixed(5)}` : '—'}</div>
           </>
         )}
       </aside>
