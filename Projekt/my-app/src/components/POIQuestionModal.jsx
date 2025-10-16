@@ -6,7 +6,6 @@ export default function POIQuestionModal({ poi, open, isNearby, onAnswered, onCl
   const [msg, setMsg] = useState('');
   const [feedback, setFeedback] = useState(null);
 
-  // Reset, wenn POI wechselt oder Modal geöffnet/geschlossen wird
   useEffect(() => {
     setQIndex(0);
     setChoice(null);
@@ -19,22 +18,33 @@ export default function POIQuestionModal({ poi, open, isNearby, onAnswered, onCl
   const questions = poi.questions || [];
   const current = questions[qIndex];
 
-  async function addPoints() {
-  if (!roomCode || !groupName) return;
-  try {
-    const res = await fetch('http://localhost:5000/api/points', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ roomCode, groupName, points: 100 })
-    });
-    const data = await res.json();
-    console.log('Neue Punkte:', data.newPoints);
-  } catch (err) {
-    console.error('Fehler beim Punkte hinzufügen:', err);
+  // 🧩 Fallback, wenn keine Fragen vorhanden sind
+  if (!questions.length) {
+    return (
+      <div style={backdrop}>
+        <div style={box}>
+          <h3>{poi.name}</h3>
+          <p>Für diesen Ort sind keine Fragen hinterlegt.</p>
+          <button onClick={onClose} style={btnPrimary}>Schließen</button>
+        </div>
+      </div>
+    );
   }
-}
 
-
+  async function addPoints() {
+    if (!roomCode || !groupName) return;
+    try {
+      const res = await fetch('/api/points', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomCode, groupName, points: 100 })
+      });
+      const data = await res.json();
+      console.log('Neue Punkte:', data.newPoints);
+    } catch (err) {
+      console.error('Fehler beim Punkte hinzufügen:', err);
+    }
+  }
 
   function submit() {
     if (!isNearby) {
@@ -43,7 +53,6 @@ export default function POIQuestionModal({ poi, open, isNearby, onAnswered, onCl
     }
     if (!current) return;
 
-    // Validate choice
     if (current.answers && current.answers.length) {
       if (choice === null || choice === undefined) {
         setMsg('Bitte wähle eine Antwort.');
@@ -66,9 +75,7 @@ export default function POIQuestionModal({ poi, open, isNearby, onAnswered, onCl
     onAnswered(current.id, given, isCorrect);
 
     if (isCorrect) {
-      // Punkte in DB hinzufügen
       addPoints();
-
       setTimeout(() => {
         setFeedback(null);
         const next = qIndex + 1;
@@ -91,8 +98,10 @@ export default function POIQuestionModal({ poi, open, isNearby, onAnswered, onCl
   return (
     <div style={backdrop}>
       <div style={box}>
-        <h3>{poi.title}</h3>
-        <div style={{ fontSize: 13, color: '#666', marginBottom: 8 }}>{qIndex + 1}/{questions.length}</div>
+        <h3>{poi.name}</h3>
+        <div style={{ fontSize: 13, color: '#666', marginBottom: 8 }}>
+          {qIndex + 1}/{questions.length}
+        </div>
 
         {feedback && (
           <div style={{
@@ -140,13 +149,16 @@ export default function POIQuestionModal({ poi, open, isNearby, onAnswered, onCl
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
           <button onClick={onClose} style={btnSecondary}>Schließen</button>
-          <button onClick={submit} style={btnPrimary}>{qIndex + 1 < questions.length ? 'Nächste Frage' : 'Fertig'}</button>
+          <button onClick={submit} style={btnPrimary}>
+            {qIndex + 1 < questions.length ? 'Nächste Frage' : 'Fertig'}
+          </button>
         </div>
       </div>
     </div>
   );
 }
 
+// Styles
 const backdrop = { position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.35)', zIndex: 3000 };
 const box = { width: 420, maxWidth: 'calc(100% - 24px)', padding: 16, borderRadius: 8, background: '#fff', boxShadow: '0 6px 18px rgba(0,0,0,0.2)', textAlign: 'left' };
 const btnPrimary = { background: '#0078d4', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6, cursor: 'pointer' };
