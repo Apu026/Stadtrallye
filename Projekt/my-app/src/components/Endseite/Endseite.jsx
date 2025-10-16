@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useParams } from 'react-router-dom';
 import MapBackground from "../MapBackground";
 import "./Endseite.css";
-import TeamSelect from "./TeamSelect";
 import Leaderboard from "./Leaderboard";
 import UserEntry from "./UserEntry";
 
@@ -82,12 +81,6 @@ export default function Endseite() {
       </div>
 
       <div className="endseite-content">
-        <TeamSelect
-          leaderboard={leaderboard}
-          userTeamId={userTeamId}
-          onChange={setUserTeamId}
-        />
-
         <h1 className="endseite-headline">
           Glückwunsch zum Abschluss der Stadtrallye 🎉
         </h1>
@@ -95,7 +88,9 @@ export default function Endseite() {
         {loading ? (
           <div>Lade Rangliste…</div>
         ) : (
-          <Leaderboard leaderboard={leaderboard} userTeamId={userTeamId} />
+          <div className="endseite-leaderboard-wrapper">
+            <Leaderboard leaderboard={leaderboard} userTeamId={userTeamId} />
+          </div>
         )}
 
         {userEntry && (

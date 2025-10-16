@@ -29,8 +29,8 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  align-items: stretch;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: flex-start;
   gap: 2vh;
   padding: 2vh 2vw;
   background: none;
@@ -38,20 +38,7 @@
 }
 
 /* Team-Select oben rechts (fixed am Bildschirmrand) */
-.endseite-team-select {
-  position: fixed;
-  top: 2vh;
-  right: 2vw;
-  background: white;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  border-radius: 8px;
-  padding: 8px 12px;
-  font-size: clamp(0.8rem, 1.2vw, 1rem);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  z-index: 100;
-}
+/* Team-Select entfernt */
 
 /* Überschrift immer mittig gehalten (oben im Container) */
 .endseite-headline {
@@ -76,6 +63,12 @@
   padding: 0;
   background: none;
   overflow: visible;
+}
+
+.endseite-leaderboard-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
 }
 
 .endseite-leaderboard h2 {

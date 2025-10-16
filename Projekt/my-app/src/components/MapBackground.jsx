@@ -68,7 +68,7 @@ const AnimatedMap = ({ route, movingIcon }) => {
     }, intervalMs);
     return () => clearInterval(interval);
   }, [map, route]);
-  return <Marker position={movingPos} icon={movingIcon} />;
+  return <Marker position={movingPos} icon={movingIcon} opacity={0} />;
 };
 
 
