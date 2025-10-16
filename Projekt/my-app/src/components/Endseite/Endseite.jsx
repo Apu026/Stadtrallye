@@ -40,6 +40,16 @@ export default function Endseite() {
         const nameMap = {};
         groupNamesArr.forEach(g => { nameMap[g.group_id ?? g.id] = g.group_name ?? g.name ?? g.groupName; });
 
+        // try to map the current user's groupName (from URL) to a group_id for highlighting
+        if (groupName) {
+          const lower = String(groupName).toLowerCase();
+          let myId = null;
+          for (const [id, name] of Object.entries(nameMap)) {
+            if (String(name || '').toLowerCase() === lower) { myId = Number(id); break; }
+          }
+          if (mounted && myId != null) setUserTeamId(myId);
+        }
+
         // choose latest session (highest session_id)
         const maxSessionId = sgs.reduce((m, s) => (s.session_id > m ? s.session_id : m), 0);
         const currentSessionId = maxSessionId || (sgs[0] && sgs[0].session_id) || null;
@@ -68,7 +78,7 @@ export default function Endseite() {
       }
     })();
     return () => { mounted = false; };
-  }, []);
+  }, [roomCode, groupName]);
 
   // poll ceremony status (in-memory flag; no DB)
   useEffect(() => {

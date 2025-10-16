@@ -103,8 +103,15 @@
 }
 
 .endseite-leaderboard-item.active {
-  background: #cce3ff;
+  background: #e6f0ff; /* helles Blau */
+  border-left: 4px solid #2f6fff; /* markanter blauer Akzent */
   font-weight: 700;
+  color: #0b3cff;
+}
+
+.endseite-leaderboard-item.active .team-name,
+.endseite-leaderboard-item.active .team-points {
+  color: #0b3cff;
 }
 
 /* Teamname & Punkte Ausrichtung */
