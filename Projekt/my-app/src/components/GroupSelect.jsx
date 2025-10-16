@@ -34,9 +34,10 @@ const GroupSelect = () => {
       .catch(() => {});
   }, [roomCode]);
 
-  const handleSelect = (name) => {
-    if (!takenGroups.includes(name.group_name)) {
-      setSelectedGroup(name.group_name);
+  const handleSelect = (groupName) => {
+    // groupName is a string (group.group_name)
+    if (!takenGroups.includes(groupName)) {
+      setSelectedGroup(groupName);
       setError('');
     }
   };
