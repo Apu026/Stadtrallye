@@ -1,0 +1,89 @@
+/* Spinner für Ladeanzeige */
+.waitingroom-spinner {
+  margin: 24px auto 0 auto;
+  border: 6px solid #e3e3e3;
+  border-top: 6px solid #1976d2;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  animation: waitingroom-spin 1s linear infinite;
+}
+
+@keyframes waitingroom-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+/* Styles für den Warteraum (WaitingRoom) */
+.waitingroom-bg {
+  width: 100%;
+  min-height: 100vh;
+  background: #f7f7f7;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.waitingroom-container {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(8,49,99,0.08);
+  max-width: 400px;
+  width: 100%;
+  padding: 2rem;
+  color: #222;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.waitingroom-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.waitingroom-info {
+  font-size: 1.1rem;
+  color: #555;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.waitingroom-list {
+  width: 100%;
+  margin: 1rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.waitingroom-list li {
+  background: #f3f3f3;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  padding: 10px 16px;
+  font-size: 1rem;
+  color: #333;
+  text-align: left;
+}
+
+.waitingroom-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 1.1rem;
+  border-radius: 8px;
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: background 0.2s;
+}
+
+.waitingroom-btn:disabled {
+  background: #aaa;
+  cursor: not-allowed;
+}

@@ -1,0 +1,55 @@
+.closed-session-login-bg {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: #f7f7f7;
+}
+
+.closed-session-login-box {
+  width: 90%;
+  max-width: 350px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  padding: 24px;
+}
+
+.closed-session-login-title {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.closed-session-login-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+
+.closed-session-login-input {
+  width: 80%;
+  padding: 0.7rem;
+  margin-bottom: 1rem;
+  border-radius: 6px;
+  border: 1.5px solid #083163;
+  font-size: 1rem;
+  background: transparent;
+  color: #222;
+}
+
+.closed-session-login-button {
+  width: 90%;
+  padding: 0.7rem;
+  border-radius: 6px;
+  background: #083163;
+  color: #fff;
+  font-weight: bold;
+  font-size: 1rem;
+  border: none;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  align-self: center;
+}

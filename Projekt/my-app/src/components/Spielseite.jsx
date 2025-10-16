@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import POIQuestionModal from './POIQuestionModal';
-import samplePOIs from '../data/pois.sample.json'; // sicherstellen, dass die Datei existiert
+import samplePOIs from '../data/pois.sample.json';
 
 // Leaflet icon fix
 import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
@@ -22,17 +23,18 @@ const redIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
-const DEFAULT_RADIUS = 50;
-const WASD_STEP = 0.00012;
+// Hilfsfunktionen
+function haversineMeters(pos1, pos2) {
+  if (!pos1 || !pos2) return Infinity; // Sicherheitscheck
+  const [lat1, lon1] = pos1;
+  const [lat2, lon2] = pos2;
 
-function haversineMeters([lat1, lon1], [lat2, lon2]) {
-  const toRad = v => (v * Math.PI) / 180;
-  const R = 6371000;
+  const toRad = deg => deg * (Math.PI / 180);
+  const R = 6371000; // Erdradius in Metern
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
   const a = Math.sin(dLat / 2) ** 2 +
-            Math.cos(toRad(lat1)) *
-            Math.cos(toRad(lat2)) *
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
             Math.sin(dLon / 2) ** 2;
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
@@ -46,7 +48,6 @@ function normalizePois(arr) {
     return copy;
   });
 }
-
 function shuffle(array) {
   let a = array.slice();
   for (let i = a.length - 1; i > 0; i--) {
@@ -55,15 +56,23 @@ function shuffle(array) {
   }
   return a;
 }
+function useQuery() {
+  return new URLSearchParams(useLocation().search);
+}
 
 export default function Spielseite() {
+  const { roomCode, groupName } = useParams(); // <-- neu
+  const query = useQuery();
+  const rallyeId = Number(query.get('rallye_id')) || 1;
+  const navigate = useNavigate();
+  const params = useParams();
+
   const [position, setPosition] = useState(null);
   const [error, setError] = useState(null);
-  const [pois, setPois] = useState(() => shuffle(normalizePois(samplePOIs || [])));
+  const [pois, setPois] = useState([]);
   const [index, setIndex] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [mode, setMode] = useState('gps');
-  const [rooms, setRooms] = useState([]);
 
   const mapRef = useRef(null);
   const geoWatchRef = useRef(null);
@@ -73,12 +82,22 @@ export default function Spielseite() {
   const [timeLeft, setTimeLeft] = useState(2 * 60 * 60);
   const [timerRunning, setTimerRunning] = useState(true);
 
+  const WASD_STEP = 100;
+
+  useEffect(() => {
+    const filtered = shuffle(normalizePois(samplePOIs)).filter(poi => Number(poi.rallye_id) === rallyeId);
+    setPois(filtered);
+    setIndex(0);
+  }, [rallyeId]);
+
+  // Timer
   useEffect(() => {
     if (!timerRunning) return;
     const interval = setInterval(() => setTimeLeft(prev => Math.max(prev - 1, 0)), 1000);
     return () => clearInterval(interval);
   }, [timerRunning]);
 
+  // GPS-Modus
   useEffect(() => {
     if (geoWatchRef.current !== null) {
       try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {}
@@ -102,9 +121,27 @@ export default function Spielseite() {
     };
   }, [mode]);
 
+  // WASD-Modus
+  useEffect(() => {
+    if (mode !== 'wasd') return;
+    function handleKey(e) {
+      if (!position) return;
+      let [lat, lon] = position;
+      const latStep = WASD_STEP / 111320;
+      const lonStep = WASD_STEP / (40075000 * Math.cos(lat * Math.PI / 180) / 360);
+      if (e.key === 'w' || e.key === 'ArrowUp') lat += latStep;
+      if (e.key === 's' || e.key === 'ArrowDown') lat -= latStep;
+      if (e.key === 'a' || e.key === 'ArrowLeft') lon -= lonStep;
+      if (e.key === 'd' || e.key === 'ArrowRight') lon += lonStep;
+      setPosition([lat, lon]);
+    }
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [mode, position]);
+
   const isNearby = useCallback((poi, userPos) => {
     if (!poi || !userPos) return false;
-    const rad = poi.radiusMeters ?? DEFAULT_RADIUS;
+    const rad = poi.radiusMeters ?? 50;
     return haversineMeters(poi.coords, userPos) <= rad;
   }, []);
 
@@ -114,16 +151,6 @@ export default function Spielseite() {
       setModalOpen(true);
     } else {
       mapRef.current?.flyTo(activePoi.coords, Math.max(mapRef.current.getZoom(), 16), { animate: true, duration: 0.6 });
-    }
-  }
-
-  async function fetchRooms() {
-    try {
-      const res = await fetch('http://localhost:5000/api/rooms/all');
-      const data = await res.json();
-      setRooms(data.rooms || []);
-    } catch (err) {
-      console.error('Fehler beim Laden der Räume:', err);
     }
   }
 
@@ -139,6 +166,33 @@ export default function Spielseite() {
     return `${m}:${String(s).padStart(2,'0')}`;
   }
 
+  function handleAnswered(qId, given, wasCorrect) {
+    const currentPoi = pois[index];
+    if (!currentPoi) return;
+
+    const updatedPois = pois.map((poi, i) => {
+      if (i !== index) return poi;
+      return {
+        ...poi,
+        questions: poi.questions.map(q =>
+          q.id === qId
+            ? { ...q, userAnswers: [...(q.userAnswers || []), given] }
+            : q
+        )
+      };
+    });
+    setPois(updatedPois);
+
+    const allAnswered = updatedPois[index].questions.every(q => q.userAnswers && q.userAnswers.length > 0);
+
+    if (allAnswered) {
+      setModalOpen(false);
+      if (index < pois.length - 1) {
+        setTimeout(() => setIndex(index + 1), 400);
+      }
+    }
+  }
+
   return (
     <div style={{ position: 'fixed', inset: 0 }}>
       <MapContainer
@@ -152,31 +206,53 @@ export default function Spielseite() {
         {activePoi && <Marker position={activePoi.coords} icon={redIcon} eventHandlers={{ click: handlePoiClick }} />}
       </MapContainer>
 
-      <div style={{ position: 'absolute', top: 12, left: 60, zIndex: 2000, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={{ background: 'rgba(255,255,255,0.9)', padding: '6px 8px', borderRadius: 6, fontWeight: 'bold' }}>
-          ⏱️ {formatTime(timeLeft)}
-        </div>
-
-        <button onClick={fetchRooms} style={{ padding: '8px 10px', borderRadius: 6, border: 'none', background: '#5cb85c', color: '#fff', cursor: 'pointer' }}>
-          Räume laden
-        </button>
-
-        {rooms.length > 0 && (
-          <div style={{ background: 'rgba(255,255,255,0.9)', padding: '6px 8px', borderRadius: 6, maxHeight: 200, overflowY: 'auto' }}>
-            {rooms.map(r => (
-              <div key={r.id} style={{ marginBottom: 4 }}>
-                <strong>{r.code}</strong> | Status: {r.status} | Rallye-ID: {r.rallye_id}
-              </div>
-            ))}
-          </div>
-        )}
+     {/* Timer oben links */}
+      <div style={{
+        position: 'absolute',
+        top: 12,
+        left: 12,
+        zIndex: 2000,
+        background: 'rgba(255,255,255,0.95)',
+        padding: '6px 8px',
+        borderRadius: 6,
+        fontWeight: 700,
+        fontFamily: 'monospace'
+      }}>
+        Zeit verbleibend: {formatTime(timeLeft)}
       </div>
+
 
       <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 2000 }}>
-        <button onClick={toggleMode} style={{ padding: '8px 10px', borderRadius: 6, border: 'none', background: '#0078d4', color: '#fff', cursor: 'pointer' }}>
-          {mode === 'gps' ? 'Modus: GPS' : 'Modus: WASD'}
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={toggleMode} style={{ padding: '8px 10px', borderRadius: 6, border: 'none', background: '#0078d4', color: '#fff', cursor: 'pointer' }}>
+            {mode === 'gps' ? 'Modus: GPS' : 'Modus: WASD'}
+          </button>
+          <button onClick={async () => {
+            // Attempt to inform server to finish the session for this room if available
+            try {
+              const roomCode = params.roomCode || query.get('room') || query.get('roomCode');
+              if (roomCode) {
+                await fetch(`/api/rooms/${encodeURIComponent(roomCode)}/finish`, { method: 'POST' });
+              }
+            } catch (e) {
+              console.warn('Failed to notify server to finish session', e);
+            }
+            // navigate to endseite using roomCode and optional groupName (from path)
+            const groupName = params.groupName || query.get('groupName') || query.get('group');
+            const rc = params.roomCode || query.get('room') || query.get('roomCode') || '';
+            const path = `/endseite/${encodeURIComponent(rc)}/${encodeURIComponent(groupName || '')}`;
+            navigate(path);
+          }} style={{ padding: '8px 10px', borderRadius: 6, border: 'none', background: '#d9534f', color: '#fff', cursor: 'pointer' }}>
+            Rallye beenden
+          </button>
+        </div>
       </div>
+
+      {mode === 'wasd' && (
+        <div style={{ position: 'absolute', bottom: 20, left: 20, zIndex: 2000, background: 'rgba(255,255,255,0.95)', padding: '8px 12px', borderRadius: 8 }}>
+          <b>WASD-Steuerung aktiv:</b> <span style={{ fontFamily: 'monospace' }}>W/A/S/D</span> oder Pfeiltasten bewegen dich auf der Karte.
+        </div>
+      )}
 
       {error && (
         <div style={{ position: 'absolute', top: 70, left: 12, zIndex: 2000, background: 'rgba(255,255,255,0.95)', padding: '6px 8px', borderRadius: 6, color: 'crimson' }}>
@@ -184,13 +260,23 @@ export default function Spielseite() {
         </div>
       )}
 
+      <div style={{ position: 'absolute', top: 12, left: 12, zIndex: 2000, background: 'rgba(255,255,255,0.95)', padding: '6px 8px', borderRadius: 6, fontWeight: 700 }}>
+        Zeit verbleibend: {formatTime(timeLeft)}
+      </div>
+
+
+
+
       <POIQuestionModal
         poi={activePoi}
         open={modalOpen}
         isNearby={isNearby(activePoi, position)}
-        onAnswered={(qId, given, wasCorrect) => {}}
+        onAnswered={handleAnswered}
         onClose={() => setModalOpen(false)}
+        roomCode={roomCode}   // automatisch aus URL
+        groupName={groupName} // automatisch aus URL
       />
-    </div>
+    </div> 
   );
 }
+ 

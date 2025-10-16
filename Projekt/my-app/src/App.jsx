@@ -1,47 +1,32 @@
 import './App.css';
 import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import Startseite from './components/Startseite';
+import ClosedSessionLogin from './components/ClosedSessionLogin';
+import SuperadminPage from './components/SuperadminPage';
+import AdminPage from './components/AdminPage';
+import GroupSelect from './components/GroupSelect';
+import WaitingRoom from './components/WaitingRoom';
 import Spielseite from './components/Spielseite';
-import AdminSpielseite from './components/AdminSpielseite/AdminSpielseite';
-import Endseite from './components/Endseite';
-
-export default function App() {
-  const [showAdmin, setShowAdmin] = useState(false);
-
-  if (showAdmin) {
-    return (
-      <>
-        {/* Zurück-Button oben links */}
-        <button
-          onClick={() => setShowAdmin(false)}
-          style={{ position: 'fixed', left: 12, top: 12, zIndex: 2000 }}
-          aria-label="Zurück zur Startseite"
-        >
-          ← Zurück
-        </button>
-
-        {/* Admin-Seite füllt den Rest */}
-        <AdminSpielseite />
-      </>
-    );
-  }
-
+import Endseite from './components/Endseite/Endseite';
+ 
+function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState(null);
   return (
-    <div className="App">
-      {/* ...existing startpage content... */}
-      <header>
-        <h1>Startseite</h1>
-      </header>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<ClosedSessionLogin onLogin={(data) => { setIsLoggedIn(true); setUserRole(data?.role); }} />} />
+        <Route path="/startseite" element={isLoggedIn ? <Startseite onLogin={(data) => { setIsLoggedIn(true); setUserRole(data?.role); }} /> : <ClosedSessionLogin onLogin={(data) => { setIsLoggedIn(true); setUserRole(data?.role); }} />} />
+        <Route path="/superadmin" element={<SuperadminPage />} />
+        <Route path="/admin" element={isLoggedIn && userRole === 'admin' ? <AdminPage /> : <ClosedSessionLogin onLogin={(data) => { setIsLoggedIn(true); setUserRole(data?.role); }} />} />
+        <Route path="/group-select/:roomCode" element={<GroupSelect />} />
+        <Route path="/waiting-room/:roomCode/:groupName" element={<WaitingRoom />} />
+  <Route path="/spiel/:roomCode/:groupName" element={<Spielseite />} />
+  <Route path="/endseite/:roomCode/:groupName" element={<Endseite />} />
 
-      <main>
-        {/* Button öffnet Admin-Ansicht */}
-        <button onClick={() => setShowAdmin(true)} aria-label="Admin öffnen">
-          Admin öffnen
-        </button>
 
-        {/* ...restliche Startseiten-Inhalte... */}
-      </main>
-    </div>
+      </Routes>
+    </BrowserRouter>
   );
 }
