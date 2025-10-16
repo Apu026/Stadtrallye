@@ -11,6 +11,7 @@ import GroupSelect from './components/GroupSelect';
 import WaitingRoom from './components/WaitingRoom';
 import Spielseite from './components/Spielseite';
 import Endseite from './components/Endseite/Endseite';
+import AdminEndseite from './components/Endseite/AdminEndseite';
  
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -28,6 +29,7 @@ function App() {
         <Route path="/waiting-room/:roomCode/:groupName" element={<WaitingRoom />} />
   <Route path="/spiel/:roomCode/:groupName" element={<Spielseite />} />
   <Route path="/endseite/:roomCode/:groupName" element={<Endseite />} />
+  <Route path="/admin/end/:roomCode" element={isLoggedIn && userRole === 'admin' ? <AdminEndseite /> : <ClosedSessionLogin onLogin={(data) => { setIsLoggedIn(true); setUserRole(data?.role); }} />} />
 
 
       </Routes>

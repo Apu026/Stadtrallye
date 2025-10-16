@@ -34,6 +34,8 @@ export default function AdminLiveMap() {
   const [loading, setLoading] = useState(false);
   const routeTimer = useRef(null);
   const playersTimer = useRef(null);
+  const pointsTimer = useRef(null);
+  const [points, setPoints] = useState(null);
 
   // Load POIs (admin page endpoint returns array)
   useEffect(() => {
@@ -98,6 +100,31 @@ export default function AdminLiveMap() {
     return () => { if (routeTimer.current) clearInterval(routeTimer.current); };
   }, [roomCode, selectedPlayer]);
 
+  // Helper: fetch points for selected player from sessiongroups
+  const fetchPoints = async (code, groupId) => {
+    if (!code || !groupId) { setPoints(null); return; }
+    try {
+      const res = await fetch(`${API_BASE}/api/sessiongroups?roomCode=${encodeURIComponent(code)}`);
+      if (!res.ok) { setPoints(null); return; }
+      const body = await res.json();
+      const sgs = Array.isArray(body) ? body : (body.sessiongroups || []);
+      const row = sgs.find(s => String(s.group_id) === String(groupId));
+      setPoints(row ? Number(row.points || 0) : 0);
+    } catch (e) {
+      setPoints(null);
+    }
+  };
+
+  // Poll points every 10 seconds for selected player
+  useEffect(() => {
+    if (!roomCode || !selectedPlayer) { if (pointsTimer.current) clearInterval(pointsTimer.current); setPoints(null); return; }
+    // initial fetch
+    fetchPoints(roomCode, selectedPlayer.id);
+    if (pointsTimer.current) clearInterval(pointsTimer.current);
+    pointsTimer.current = setInterval(() => fetchPoints(roomCode, selectedPlayer.id), 10000);
+    return () => { if (pointsTimer.current) clearInterval(pointsTimer.current); };
+  }, [roomCode, selectedPlayer]);
+
   const center = useMemo(() => {
     if (route.length > 0) return [Number(route[route.length - 1].lat) || 52.52, Number(route[route.length - 1].lng) || 13.405];
     if (pois[0]?.lat && pois[0]?.lng) return [Number(pois[0].lat), Number(pois[0].lng)];
@@ -139,7 +166,12 @@ export default function AdminLiveMap() {
             }
           }}>Zurück</button>
         </div>
-        <h3>Admin Live-Tracking</h3>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <h3 style={{ margin: 0 }}>Admin Live-Tracking</h3>
+          {roomCode && (
+            <button type="button" onClick={() => navigate(`/admin/end/${encodeURIComponent(roomCode)}`)} style={{ padding: '6px 10px', borderRadius: 6, border: 'none', background: '#444', color: '#fff' }}>Auswertung</button>
+          )}
+        </div>
         <div className="small" style={{ marginBottom: 6 }}>Raum-Code: {roomCode ? <b>{roomCode}</b> : <span className="muted">—</span>}</div>
         {!roomCode && <div className="muted">Bitte diese Seite über den „Live-Tracking“-Knopf in der Admin-Ansicht öffnen.</div>}
         {loading && <div className="muted">Lade…</div>}
@@ -174,7 +206,7 @@ export default function AdminLiveMap() {
           <>
             <hr />
             <h4 style={{ margin: '8px 0' }}>Route von {selectedPlayer.name}</h4>
-            <div className="small">Punkte: {route.length}</div>
+            <div className="small">Punkte: {points != null ? points : '—'}</div>
           </>
         )}
       </aside>

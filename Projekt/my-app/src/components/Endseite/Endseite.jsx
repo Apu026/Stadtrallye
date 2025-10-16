@@ -14,6 +14,7 @@ export default function Endseite() {
   const [loading, setLoading] = useState(true);
   const { roomCode, groupName } = useParams();
   const [sessionId, setSessionId] = useState(null);
+  const [ceremony, setCeremony] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -69,6 +70,27 @@ export default function Endseite() {
     return () => { mounted = false; };
   }, []);
 
+  // poll ceremony status (in-memory flag; no DB)
+  useEffect(() => {
+    let timer = null;
+    let cancelled = false;
+    async function check() {
+      if (!roomCode) return;
+      try {
+        const res = await fetch(`${API_BASE}/api/page/adminendseite/ceremony-status?roomCode=${encodeURIComponent(roomCode)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (!cancelled) setCeremony(!!data.ceremony);
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+    check();
+    timer = setInterval(check, 5000);
+    return () => { cancelled = true; if (timer) clearInterval(timer); };
+  }, [roomCode]);
+
   useEffect(() => {
     const entry = leaderboard.find((t) => t.id === userTeamId) || null;
     setUserEntry(entry);
@@ -87,9 +109,13 @@ export default function Endseite() {
 
         {loading ? (
           <div>Lade Rangliste…</div>
-        ) : (
+        ) : ceremony ? (
           <div className="endseite-leaderboard-wrapper">
             <Leaderboard leaderboard={leaderboard} userTeamId={userTeamId} />
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', color: '#333', marginTop: 12 }}>
+            Warte bis der Spielleiter die Rallye beendet
           </div>
         )}
 
