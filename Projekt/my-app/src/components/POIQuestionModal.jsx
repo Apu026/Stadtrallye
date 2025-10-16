@@ -20,19 +20,21 @@ export default function POIQuestionModal({ poi, open, isNearby, onAnswered, onCl
   const current = questions[qIndex];
 
   async function addPoints() {
-    if (!roomCode || !groupName) return;
-    try {
-      const res = await fetch(`http://localhost:5000/api/rooms/${roomCode}/answer`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupName, correct: true })
-      });
-      const data = await res.json();
-      console.log('Neue Punkte:', data.newPoints);
-    } catch (err) {
-      console.error('Fehler beim Punkte hinzufügen:', err);
-    }
+  if (!roomCode || !groupName) return;
+  try {
+    const res = await fetch('http://localhost:5000/api/points', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ roomCode, groupName, points: 100 })
+    });
+    const data = await res.json();
+    console.log('Neue Punkte:', data.newPoints);
+  } catch (err) {
+    console.error('Fehler beim Punkte hinzufügen:', err);
   }
+}
+
+
 
   function submit() {
     if (!isNearby) {

@@ -206,6 +206,22 @@ export default function Spielseite() {
         {activePoi && <Marker position={activePoi.coords} icon={redIcon} eventHandlers={{ click: handlePoiClick }} />}
       </MapContainer>
 
+     {/* Timer oben links */}
+      <div style={{
+        position: 'absolute',
+        top: 12,
+        left: 12,
+        zIndex: 2000,
+        background: 'rgba(255,255,255,0.95)',
+        padding: '6px 8px',
+        borderRadius: 6,
+        fontWeight: 700,
+        fontFamily: 'monospace'
+      }}>
+        Zeit verbleibend: {formatTime(timeLeft)}
+      </div>
+
+
       <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 2000 }}>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={toggleMode} style={{ padding: '8px 10px', borderRadius: 6, border: 'none', background: '#0078d4', color: '#fff', cursor: 'pointer' }}>
@@ -243,6 +259,13 @@ export default function Spielseite() {
           {error}
         </div>
       )}
+
+      <div style={{ position: 'absolute', top: 12, left: 12, zIndex: 2000, background: 'rgba(255,255,255,0.95)', padding: '6px 8px', borderRadius: 6, fontWeight: 700 }}>
+        Zeit verbleibend: {formatTime(timeLeft)}
+      </div>
+
+
+
 
       <POIQuestionModal
         poi={activePoi}
