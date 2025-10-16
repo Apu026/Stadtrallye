@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 
-export default function POIQuestionModal({ poi, open, isNearby, onAnswered, onClose }) {
+export default function POIQuestionModal({ poi, open, isNearby, onAnswered, onClose, roomCode, groupName }) {
   const [qIndex, setQIndex] = useState(0);
   const [choice, setChoice] = useState(null);
   const [msg, setMsg] = useState('');
   const [feedback, setFeedback] = useState(null);
 
-  // Reset, wenn POI wechselt
+  // Reset, wenn POI wechselt oder Modal geöffnet/geschlossen wird
   useEffect(() => {
     setQIndex(0);
     setChoice(null);
@@ -18,6 +18,21 @@ export default function POIQuestionModal({ poi, open, isNearby, onAnswered, onCl
 
   const questions = poi.questions || [];
   const current = questions[qIndex];
+
+  async function addPoints() {
+    if (!roomCode || !groupName) return;
+    try {
+      const res = await fetch(`http://localhost:5000/api/rooms/${roomCode}/answer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ groupName, correct: true })
+      });
+      const data = await res.json();
+      console.log('Neue Punkte:', data.newPoints);
+    } catch (err) {
+      console.error('Fehler beim Punkte hinzufügen:', err);
+    }
+  }
 
   function submit() {
     if (!isNearby) {
@@ -49,6 +64,9 @@ export default function POIQuestionModal({ poi, open, isNearby, onAnswered, onCl
     onAnswered(current.id, given, isCorrect);
 
     if (isCorrect) {
+      // Punkte in DB hinzufügen
+      addPoints();
+
       setTimeout(() => {
         setFeedback(null);
         const next = qIndex + 1;
@@ -91,31 +109,30 @@ export default function POIQuestionModal({ poi, open, isNearby, onAnswered, onCl
         <p style={{ textAlign: 'left' }}>{current.question}</p>
 
         {current.answers?.length ? (
-        <div style={{ textAlign: 'left' }}>
+          <div style={{ textAlign: 'left' }}>
             {current.answers.map((a, i) => (
-            <label key={i} style={{ display: 'block', marginBottom: 8, cursor: 'pointer' }}>
+              <label key={i} style={{ display: 'block', marginBottom: 8, cursor: 'pointer' }}>
                 <input
-                type="radio"
-                name="poi_q"
-                value={i}
-                checked={choice === i} // <-- nur exakt gleich
-                onChange={e => { setChoice(i); setMsg(''); }} // <-- direkt i, nicht Number(e.target.value)
-                style={{ marginRight: 8 }}
+                  type="radio"
+                  name="poi_q"
+                  value={i}
+                  checked={choice === i}
+                  onChange={e => { setChoice(i); setMsg(''); }}
+                  style={{ marginRight: 8 }}
                 />
                 {a}
-            </label>
+              </label>
             ))}
-        </div>
+          </div>
         ) : (
-        <input
+          <input
             type="text"
             value={choice || ''}
             onChange={e => { setChoice(e.target.value); setMsg(''); }}
             placeholder="Antwort eingeben"
             style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}
-        />
+          />
         )}
-
 
         {msg && <div style={{ color: 'crimson', marginTop: 8 }}>{msg}</div>}
 

@@ -23,16 +23,18 @@ const redIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
-const DEFAULT_RADIUS = 50;
+// Hilfsfunktionen
+function haversineMeters(pos1, pos2) {
+  if (!pos1 || !pos2) return Infinity; // Sicherheitscheck
+  const [lat1, lon1] = pos1;
+  const [lat2, lon2] = pos2;
 
-function haversineMeters([lat1, lon1], [lat2, lon2]) {
-  const toRad = v => (v * Math.PI) / 180;
-  const R = 6371000;
+  const toRad = deg => deg * (Math.PI / 180);
+  const R = 6371000; // Erdradius in Metern
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
   const a = Math.sin(dLat / 2) ** 2 +
-            Math.cos(toRad(lat1)) *
-            Math.cos(toRad(lat2)) *
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
             Math.sin(dLon / 2) ** 2;
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
@@ -46,7 +48,6 @@ function normalizePois(arr) {
     return copy;
   });
 }
-
 function shuffle(array) {
   let a = array.slice();
   for (let i = a.length - 1; i > 0; i--) {
@@ -55,13 +56,12 @@ function shuffle(array) {
   }
   return a;
 }
-
-// Hilfsfunktion zum Auslesen von Query-Parametern
 function useQuery() {
   return new URLSearchParams(useLocation().search);
 }
 
 export default function Spielseite() {
+  const { roomCode, groupName } = useParams(); // <-- neu
   const query = useQuery();
   const rallyeId = Number(query.get('rallye_id')) || 1;
   const navigate = useNavigate();
@@ -90,12 +90,14 @@ export default function Spielseite() {
     setIndex(0);
   }, [rallyeId]);
 
+  // Timer
   useEffect(() => {
     if (!timerRunning) return;
     const interval = setInterval(() => setTimeLeft(prev => Math.max(prev - 1, 0)), 1000);
     return () => clearInterval(interval);
   }, [timerRunning]);
 
+  // GPS-Modus
   useEffect(() => {
     if (geoWatchRef.current !== null) {
       try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {}
@@ -119,6 +121,7 @@ export default function Spielseite() {
     };
   }, [mode]);
 
+  // WASD-Modus
   useEffect(() => {
     if (mode !== 'wasd') return;
     function handleKey(e) {
@@ -138,7 +141,7 @@ export default function Spielseite() {
 
   const isNearby = useCallback((poi, userPos) => {
     if (!poi || !userPos) return false;
-    const rad = poi.radiusMeters ?? DEFAULT_RADIUS;
+    const rad = poi.radiusMeters ?? 50;
     return haversineMeters(poi.coords, userPos) <= rad;
   }, []);
 
@@ -247,7 +250,10 @@ export default function Spielseite() {
         isNearby={isNearby(activePoi, position)}
         onAnswered={handleAnswered}
         onClose={() => setModalOpen(false)}
+        roomCode={roomCode}   // automatisch aus URL
+        groupName={groupName} // automatisch aus URL
       />
     </div> 
   );
-} 
+}
+ 
