@@ -4,10 +4,12 @@ import MapBackground from "../MapBackground";
 import "./Endseite.css";
 import Leaderboard from "./Leaderboard";
 import UserEntry from "./UserEntry";
+import useBackBlocker from '../../hooks/useBackBlocker';
 
 const API_BASE = (import.meta && import.meta.env && import.meta.env.VITE_API_BASE) || "";
 
 export default function Endseite() {
+  useBackBlocker('Du kannst nicht zur Spielseite zurück.', '/startseite');
   const [leaderboard, setLeaderboard] = useState([]);
   const [userTeamId, setUserTeamId] = useState(0);
   const [userEntry, setUserEntry] = useState(null);
@@ -15,6 +17,8 @@ export default function Endseite() {
   const { roomCode, groupName } = useParams();
   const [sessionId, setSessionId] = useState(null);
   const [ceremony, setCeremony] = useState(false);
+
+  // Back-trap handled by useBackBlocker
 
   useEffect(() => {
     let mounted = true;
@@ -120,21 +124,22 @@ export default function Endseite() {
         {loading ? (
           <div>Lade Rangliste…</div>
         ) : ceremony ? (
-          <div className="endseite-leaderboard-wrapper">
-            <Leaderboard leaderboard={leaderboard} userTeamId={userTeamId} />
-          </div>
+          <>
+            <div className="endseite-leaderboard-wrapper">
+              <Leaderboard leaderboard={leaderboard} userTeamId={userTeamId} />
+            </div>
+            {userEntry && (
+              <UserEntry
+                userEntry={userEntry}
+                position={leaderboard.findIndex((t) => t.id === userTeamId) + 1}
+                sessionId={sessionId}
+              />
+            )}
+          </>
         ) : (
           <div style={{ textAlign: 'center', color: '#333', marginTop: 12 }}>
             Warte bis der Spielleiter die Rallye beendet
           </div>
-        )}
-
-        {userEntry && (
-          <UserEntry
-            userEntry={userEntry}
-            position={leaderboard.findIndex((t) => t.id === userTeamId) + 1}
-            sessionId={sessionId}
-          />
         )}
       </div>
     </div>

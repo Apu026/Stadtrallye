@@ -8,6 +8,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Prevent caching for player-facing pages/APIs to avoid BFCache/stale views
+function setNoStore(req, res, next) {
+	res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+	res.setHeader('Pragma', 'no-cache');
+	res.setHeader('Expires', '0');
+	next();
+}
+
 // health
 app.get('/api/health', (req, res) => res.json({ ok: true, ts: Date.now() }));
 
@@ -38,13 +46,13 @@ app.use('/api/pois', poisRouter);
 app.use('/api/rallyes', rallyesRouter);
 app.use('/api/rooms', roomsRouter);
 
-app.use('/api/page/startseite', startseitePage);
-app.use('/api/page/spielseite', spielseitePage);
-app.use('/api/page/endseite', endseitePage);
+app.use('/api/page/startseite', setNoStore, startseitePage);
+app.use('/api/page/spielseite', setNoStore, spielseitePage);
+app.use('/api/page/endseite', setNoStore, endseitePage);
 app.use('/api/page/admin', adminPage);
 app.use('/api/page/superadmin', superadminPage);
-app.use('/api/page/waitingroom', waitingroomPage);
-app.use('/api/page/groupselect', groupselectPage);
+app.use('/api/page/waitingroom', setNoStore, waitingroomPage);
+app.use('/api/page/groupselect', setNoStore, groupselectPage);
 app.use('/api/page/adminspielseite', adminspielseitePage);
 app.use('/api/page/adminendseite', adminendseitePage);
 app.use('/api/sessiongroups', sessiongroupsRouter);

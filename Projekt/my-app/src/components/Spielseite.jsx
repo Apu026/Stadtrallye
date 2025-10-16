@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import POIQuestionModal from './POIQuestionModal';
+import useBackBlocker from '../hooks/useBackBlocker';
 
 // Leaflet icon fix
 import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
@@ -53,6 +54,7 @@ function useQuery() {
 }
 
 export default function Spielseite() {
+  useBackBlocker('Zurück während der Rallye ist nicht erlaubt.', '/startseite');
   const { roomCode, groupName } = useParams();
   const query = useQuery();
   const rallyeId = Number(query.get('rallye_id')) || 1;
@@ -77,6 +79,28 @@ export default function Spielseite() {
 
   const WASD_STEP = 100;
 
+  // Guard: if session is not active, redirect to Endseite (handles browser back)
+  useEffect(() => {
+    let cancelled = false;
+    async function checkStatus() {
+      try {
+        const code = params.roomCode || query.get('room') || query.get('roomCode');
+        const gname = params.groupName || query.get('groupName') || query.get('group') || '';
+        if (!code) return;
+        const res = await fetch(`/api/rooms/check/${encodeURIComponent(code)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const status = (data && data.status ? String(data.status) : '').toLowerCase();
+        if (!cancelled && status && status !== 'gestartet') {
+          navigate(`/endseite/${encodeURIComponent(code)}/${encodeURIComponent(gname)}`, { replace: true });
+        }
+      } catch {}
+    }
+    const onPageShow = () => { checkStatus(); };
+    checkStatus();
+    window.addEventListener('pageshow', onPageShow);
+    return () => { cancelled = true; window.removeEventListener('pageshow', onPageShow); };
+  }, [params.roomCode, params.groupName, navigate]);
 
   // POIs und deren Fragen laden
 useEffect(() => {
@@ -331,7 +355,7 @@ useEffect(() => {
               console.warn('Failed to notify server to finish session', e);
             }
             const gn = groupName || query.get('groupName') || query.get('group');
-            navigate(`/endseite/${encodeURIComponent(roomCode || '')}/${encodeURIComponent(gn || '')}`);
+            navigate(`/endseite/${encodeURIComponent(roomCode || '')}/${encodeURIComponent(gn || '')}`, { replace: true });
           }} style={{ padding: '8px 10px', borderRadius: 6, border: 'none', background: '#d9534f', color: '#fff', cursor: 'pointer' }}>
             Rallye beenden
           </button>

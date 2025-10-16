@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import './WaitingRoom.css';
+import useBackBlocker from '../hooks/useBackBlocker';
 
 const WaitingRoom = () => {
+  useBackBlocker('Bitte nicht zurück – warte auf den Start der Rallye.', '/startseite');
   const { roomCode, groupName } = useParams();
   const [started, setStarted] = useState(false);
   const [error, setError] = useState('');
@@ -44,7 +46,7 @@ const WaitingRoom = () => {
           const status = data.status || (data.room && data.room.status);
           if (status === 'gestartet') {
             setStarted(true);
-            navigate(`/spiel/${roomCode}/${groupName}?rallye_id=${rallyeId}`);
+            navigate(`/spiel/${roomCode}/${groupName}?rallye_id=${rallyeId}`, { replace: true });
           } else {
             setStarted(false);
             setError('Warten auf Start der Rallye...');
