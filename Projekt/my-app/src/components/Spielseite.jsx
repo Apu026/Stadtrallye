@@ -4,7 +4,6 @@ import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import POIQuestionModal from './POIQuestionModal';
-import samplePOIs from '../data/pois.sample.json';
 
 // Leaflet icon fix
 import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
@@ -25,12 +24,12 @@ const redIcon = new L.Icon({
 
 // Hilfsfunktionen
 function haversineMeters(pos1, pos2) {
-  if (!pos1 || !pos2) return Infinity; // Sicherheitscheck
+  if (!pos1 || !pos2) return Infinity;
   const [lat1, lon1] = pos1;
   const [lat2, lon2] = pos2;
 
   const toRad = deg => deg * (Math.PI / 180);
-  const R = 6371000; // Erdradius in Metern
+  const R = 6371000;
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
   const a = Math.sin(dLat / 2) ** 2 +
@@ -40,14 +39,6 @@ function haversineMeters(pos1, pos2) {
   return R * c;
 }
 
-function normalizePois(arr) {
-  return (arr || []).map((p, i) => {
-    const copy = { ...p };
-    copy.id = typeof copy.id === 'number' ? copy.id : i + 1;
-    copy.questions = copy.questions || [];
-    return copy;
-  });
-}
 function shuffle(array) {
   let a = array.slice();
   for (let i = a.length - 1; i > 0; i--) {
@@ -56,12 +47,13 @@ function shuffle(array) {
   }
   return a;
 }
+
 function useQuery() {
   return new URLSearchParams(useLocation().search);
 }
 
 export default function Spielseite() {
-  const { roomCode, groupName } = useParams(); // <-- neu
+  const { roomCode, groupName } = useParams();
   const query = useQuery();
   const rallyeId = Number(query.get('rallye_id')) || 1;
   const navigate = useNavigate();
@@ -84,11 +76,51 @@ export default function Spielseite() {
 
   const WASD_STEP = 100;
 
-  useEffect(() => {
-    const filtered = shuffle(normalizePois(samplePOIs)).filter(poi => Number(poi.rallye_id) === rallyeId);
-    setPois(filtered);
-    setIndex(0);
-  }, [rallyeId]);
+
+  // POIs und deren Fragen laden
+useEffect(() => {
+  const loadPois = async () => {
+    try {
+      const backendBase = 'http://localhost:5000'; // Backend-URL
+
+      console.log('Hole POIs von:', `${backendBase}/api/pois`);
+      const res = await fetch(`${backendBase}/api/pois`);
+      if (!res.ok) throw new Error(`Fehler: ${res.status}`);
+      const data = await res.json();
+
+      // data.poi ist die Tabelle in der DB
+      const poiArray = data.pois || [];
+      const filtered = shuffle(poiArray).filter(poi => Number(poi.rallye_id) === rallyeId);
+
+      // Fragen für jeden POI laden
+      const poisWithQuestions = await Promise.all(
+        filtered.map(async poi => {
+          try {
+            console.log('Hole Fragen für POI', poi.id);
+            const qRes = await fetch(`${backendBase}/api/questions?poi_id=${poi.id}`);
+            if (!qRes.ok) throw new Error(`Fehler: ${qRes.status}`);
+            const qData = await qRes.json();
+            return { ...poi, questions: qData.questions || [] };
+          } catch (err) {
+            console.error(`Fehler beim Laden der Fragen für POI ${poi.id}:`, err);
+            return { ...poi, questions: [] };
+          }
+        })
+      );
+
+      console.log('POIs mit Fragen:', poisWithQuestions);
+      setPois(poisWithQuestions);
+      setIndex(0);
+    } catch (err) {
+      console.error('Fehler beim Laden der POIs oder Fragen:', err);
+      setError('POIs konnten nicht geladen werden');
+    }
+  };
+
+  loadPois();
+}, [rallyeId]);
+
+
 
   // Timer
   useEffect(() => {
@@ -206,7 +238,7 @@ export default function Spielseite() {
         {activePoi && <Marker position={activePoi.coords} icon={redIcon} eventHandlers={{ click: handlePoiClick }} />}
       </MapContainer>
 
-     {/* Timer oben links */}
+      {/* Timer oben links */}
       <div style={{
         position: 'absolute',
         top: 12,
@@ -221,27 +253,20 @@ export default function Spielseite() {
         Zeit verbleibend: {formatTime(timeLeft)}
       </div>
 
-
       <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 2000 }}>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={toggleMode} style={{ padding: '8px 10px', borderRadius: 6, border: 'none', background: '#0078d4', color: '#fff', cursor: 'pointer' }}>
             {mode === 'gps' ? 'Modus: GPS' : 'Modus: WASD'}
           </button>
           <button onClick={async () => {
-            // Attempt to inform server to finish the session for this room if available
             try {
-              const roomCode = params.roomCode || query.get('room') || query.get('roomCode');
-              if (roomCode) {
-                await fetch(`/api/rooms/${encodeURIComponent(roomCode)}/finish`, { method: 'POST' });
-              }
+              const rc = roomCode || query.get('room') || query.get('roomCode');
+              if (rc) await fetch(`/api/rooms/${encodeURIComponent(rc)}/finish`, { method: 'POST' });
             } catch (e) {
               console.warn('Failed to notify server to finish session', e);
             }
-            // navigate to endseite using roomCode and optional groupName (from path)
-            const groupName = params.groupName || query.get('groupName') || query.get('group');
-            const rc = params.roomCode || query.get('room') || query.get('roomCode') || '';
-            const path = `/endseite/${encodeURIComponent(rc)}/${encodeURIComponent(groupName || '')}`;
-            navigate(path);
+            const gn = groupName || query.get('groupName') || query.get('group');
+            navigate(`/endseite/${encodeURIComponent(roomCode || '')}/${encodeURIComponent(gn || '')}`);
           }} style={{ padding: '8px 10px', borderRadius: 6, border: 'none', background: '#d9534f', color: '#fff', cursor: 'pointer' }}>
             Rallye beenden
           </button>
@@ -260,23 +285,15 @@ export default function Spielseite() {
         </div>
       )}
 
-      <div style={{ position: 'absolute', top: 12, left: 12, zIndex: 2000, background: 'rgba(255,255,255,0.95)', padding: '6px 8px', borderRadius: 6, fontWeight: 700 }}>
-        Zeit verbleibend: {formatTime(timeLeft)}
-      </div>
-
-
-
-
       <POIQuestionModal
         poi={activePoi}
         open={modalOpen}
         isNearby={isNearby(activePoi, position)}
         onAnswered={handleAnswered}
         onClose={() => setModalOpen(false)}
-        roomCode={roomCode}   // automatisch aus URL
-        groupName={groupName} // automatisch aus URL
+        roomCode={roomCode}
+        groupName={groupName}
       />
-    </div> 
+    </div>
   );
 }
- 

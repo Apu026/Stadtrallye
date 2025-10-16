@@ -29,6 +29,7 @@ const sessiongroupsRouter = require('./routes/sessiongroups');
 const groupNamesRouter = require('./routes/group-names');
 const authRouter = require('./routes/auth');
 const pointsRouter = require('./routes/points');
+const questionsRouter = require('./routes/questions');
 
 app.use('/api/users', usersRouter);
 app.use('/api/pois', poisRouter);
@@ -46,6 +47,8 @@ app.use('/api/sessiongroups', sessiongroupsRouter);
 app.use('/api/group-names', groupNamesRouter);
 app.use('/api', authRouter);
 app.use('/api/points', pointsRouter);
+app.use('/api/questions', questionsRouter);
+
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`✅ Server läuft auf Port ${PORT}`));
