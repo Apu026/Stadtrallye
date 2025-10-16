@@ -170,7 +170,7 @@ const AdminPage = () => {
       </button>
       <div style={{ marginTop: 12 }}>
         <button className="admin-page-create-btn admin-page-poi-btn" onClick={() => navigate('/admin/poi-erstellen')}>
-          Zur POI-Erstellen-Seite
+          POIs-Erstellen
         </button>
       </div>
 
@@ -199,6 +199,10 @@ const AdminPage = () => {
               <button className="admin-page-action-btn admin-page-delete-btn" onClick={() => handleDeleteRoom(room.session_id)}>
                 Raum löschen
               </button>
+              {/* Live-Tracking für diese Session */}
+              <button className="admin-page-action-btn admin-page-start-btn" onClick={() => navigate(`/admin/live/${encodeURIComponent(room.entry_code)}`)}>
+                Live-Tracking
+              </button>
             </li>
           ))}
       
@@ -222,6 +226,10 @@ const AdminPage = () => {
               <button className="admin-page-action-btn admin-page-delete-btn" onClick={() => handleDeleteRoom(room.session_id)}>
                 Raum löschen
               </button>
+              {/* Live-Tracking für diese Session */}
+              <button className="admin-page-action-btn admin-page-start-btn" onClick={() => navigate(`/admin/live/${encodeURIComponent(room.entry_code)}`)}>
+                Live-Tracking
+              </button>
             </li>
           ))}
       
@@ -244,6 +252,10 @@ const AdminPage = () => {
               {/* Button zum Löschen */}
               <button className="admin-page-action-btn admin-page-delete-btn" onClick={() => handleDeleteRoom(room.session_id)}>
                 Raum löschen
+              </button>
+              {/* Live-Tracking für diese Session */}
+              <button className="admin-page-action-btn admin-page-start-btn" onClick={() => navigate(`/admin/live/${encodeURIComponent(room.entry_code)}`)}>
+                Live-Tracking
               </button>
             </li>
           ))}

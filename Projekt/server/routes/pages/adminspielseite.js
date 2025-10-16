@@ -14,6 +14,11 @@ function mapPoiRow(row) {
   };
 }
 
+// quick diagnostics
+router.get('/health', (req, res) => {
+  return res.json({ ok: true, dbEnabled });
+});
+
 // GET /api/page/adminspielseite/pois
 router.get('/pois', async (req, res) => {
   if (!dbEnabled) return res.json([]);
@@ -31,7 +36,8 @@ router.get('/pois', async (req, res) => {
     return res.json(r.rows.map(mapPoiRow));
   } catch (e) {
     console.error('adminspielseite GET /pois failed:', e.message || e);
-    return res.status(500).json({ error: 'DB_ERROR' });
+    // Safe fallback for UI
+    return res.json([]);
   }
 });
 
@@ -185,6 +191,58 @@ router.delete('/questions/:id', async (req, res) => {
   } catch (e) {
     console.error('adminspielseite DELETE /questions/:id failed:', e.message || e);
     return res.status(500).json({ error: 'DB_ERROR' });
+  }
+});
+
+// Below are additional monitoring endpoints for Admin live view
+// GET /api/page/adminspielseite/players?roomCode=ABC123
+router.get('/players', async (req, res) => {
+  if (!dbEnabled) return res.json({ players: [] });
+  const { roomCode } = req.query;
+  if (!roomCode) return res.json({ players: [] });
+  try {
+    const sr = await pool.query('SELECT session_id FROM session WHERE entry_code = $1', [roomCode]);
+    if (sr.rows.length === 0) return res.json({ players: [] });
+    const sessionId = sr.rows[0].session_id;
+    const q = `
+      SELECT sg.group_id, g.group_name
+      FROM sessiongroups sg
+      JOIN groups g ON g.group_id = sg.group_id
+      WHERE sg.session_id = $1
+      ORDER BY g.group_name ASC`;
+    const r = await pool.query(q, [sessionId]);
+    return res.json({ players: r.rows.map(row => ({ id: row.group_id, name: row.group_name })) });
+  } catch (e) {
+    console.error('adminspielseite GET /players failed:', e.message || e);
+    return res.json({ players: [] });
+  }
+});
+
+// GET /api/page/adminspielseite/players/:groupId/route?roomCode=ABC123
+// Assumes a table positions(session_id, group_id, lat, lng, ts)
+router.get('/players/:groupId/route', async (req, res) => {
+  if (!dbEnabled) return res.json({ route: [] });
+  const { groupId } = req.params;
+  const { roomCode } = req.query;
+  if (!groupId || !roomCode) return res.json({ route: [] });
+  try {
+    const sr = await pool.query('SELECT session_id FROM session WHERE entry_code = $1', [roomCode]);
+    if (sr.rows.length === 0) return res.json({ route: [] });
+    const sessionId = sr.rows[0].session_id;
+    try {
+      const r = await pool.query(
+        'SELECT lat, lng, ts FROM positions WHERE session_id = $1 AND group_id = $2 ORDER BY ts ASC',
+        [sessionId, Number(groupId)]
+      );
+      return res.json({ route: r.rows.map(row => ({ lat: Number(row.lat), lng: Number(row.lng), ts: row.ts })) });
+    } catch (inner) {
+      // positions table may not exist yet; return safe fallback
+      console.warn('positions lookup failed, returning empty route:', inner.message || inner);
+      return res.json({ route: [] });
+    }
+  } catch (e) {
+    console.error('adminspielseite GET /players/:groupId/route failed:', e.message || e);
+    return res.json({ route: [] });
   }
 });
 
