@@ -1,6 +1,6 @@
 // MapBackground.jsx
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Polyline, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -25,30 +25,45 @@ const flagIcon = new L.Icon({
 });
 
 
-import { useState } from 'react';
-
 const AnimatedMap = ({ route, movingIcon }) => {
   const map = useMap();
-  const [movingPos, setMovingPos] = useState(route[0]);
+  const [movingPos, setMovingPos] = useState(route && route.length > 0 ? route[0] : [52.52, 13.405]);
   useEffect(() => {
+    if (!route || route.length < 1) return;
+    // if only one point, center once and stop
+    if (route.length === 1) {
+      try { map.setView(route[0], map.getZoom()); setMovingPos(route[0]); } catch (e) {}
+      return;
+    }
+    // ensure map sizes are correct
+    try { setTimeout(() => map.invalidateSize(), 100); } catch (e) {}
+
     let idx = 0, progress = 0;
-    const stepCount = 100, intervalMs = 40;
+    const stepCount = 80; // steps per segment
+    const intervalMs = 50; // update rate
     let current = route[0], next = route[1];
+
     const interval = setInterval(() => {
-      let lat, lng;
-      if (progress <= stepCount) {
-        lat = current[0] + (next[0] - current[0]) * (progress / stepCount);
-        lng = current[1] + (next[1] - current[1]) * (progress / stepCount);
-        map.setView([lat, lng], map.getZoom());
-        setMovingPos([lat, lng]);
-        progress++;
-      } else {
-        map.setView(next, map.getZoom());
-        setMovingPos(next);
-        idx = (idx + 1) % route.length;
-        current = route[idx];
-        next = route[(idx + 1) % route.length];
-        progress = 0;
+      try {
+        let lat, lng;
+        if (progress <= stepCount) {
+          lat = current[0] + (next[0] - current[0]) * (progress / stepCount);
+          lng = current[1] + (next[1] - current[1]) * (progress / stepCount);
+          setMovingPos([lat, lng]);
+          // smooth follow without changing zoom
+          map.panTo([lat, lng], { animate: true, duration: 0.4, easeLinearity: 0.25 });
+          progress++;
+        } else {
+          // jump to next segment start
+          setMovingPos(next);
+          map.panTo(next, { animate: true, duration: 0.4, easeLinearity: 0.25 });
+          idx = (idx + 1) % route.length;
+          current = route[idx];
+          next = route[(idx + 1) % route.length];
+          progress = 0;
+        }
+      } catch (e) {
+        // ignore paint errors
       }
     }, intervalMs);
     return () => clearInterval(interval);

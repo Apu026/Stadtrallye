@@ -62,7 +62,7 @@ const Startseite = ({ onLogin }) => {
 
       {showLogin && <LoginModal onClose={() => setShowLogin(false)} onLogin={onLogin} />}
 
-      <div style={{ maxWidth: 400, margin: '80px auto', background: '#fff', borderRadius: 12, padding: 32, boxShadow: '0 4px 16px rgba(0,0,0,0.08)', textAlign: 'center' }}>
+  <div style={{ maxWidth: 400, margin: '80px auto', background: '#fff', borderRadius: 12, padding: 32, boxShadow: '0 4px 16px rgba(0,0,0,0.08)', textAlign: 'center', position: 'relative', zIndex: 2 }}>
         <h2>Willkommen zur Stadtrallye!</h2>
         <p>Starte hier deine Rallye und entdecke die Stadt.</p>
 
