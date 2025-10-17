@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import POIQuestionModal from './POIQuestionModal';
+import Scoreboard from './Scoreboard';
 
 // Leaflet icon fix
 import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
@@ -75,7 +76,7 @@ export default function Spielseite() {
   const [timeLeft, setTimeLeft] = useState(2 * 60 * 60);
   const [timerRunning, setTimerRunning] = useState(true);
 
-  const WASD_STEP = 100;
+  const WASD_STEP = 50;
 
 
   // POIs und deren Fragen laden
@@ -337,6 +338,13 @@ useEffect(() => {
           </button>
         </div>
       </div>
+
+      {/* Scoreboard other teams (excluding current) */}
+      <Scoreboard
+        roomCode={roomCode || query.get('room') || query.get('roomCode')}
+        currentGroupName={groupName || query.get('groupName') || query.get('group')}
+        pollMs={5000}
+      />
 
       {mode === 'wasd' && (
         <div style={{ position: 'absolute', bottom: 20, left: 20, zIndex: 2000, background: 'rgba(255,255,255,0.95)', padding: '8px 12px', borderRadius: 8 }}>
