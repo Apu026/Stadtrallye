@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import POIQuestionModal from './POIQuestionModal';
@@ -289,6 +289,14 @@ export default function Spielseite() {
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
         {position && <Marker position={position} />}
         {activePoi && <Marker position={activePoi.coords} icon={redIcon} eventHandlers={{ click: handlePoiClick }} />}
+
+        {/* Rote Linie vom aktuellen Standort zum nächsten POI */}
+        {position && activePoi && (
+          <Polyline
+            positions={[position, activePoi.coords]}
+            pathOptions={{ color: '#d9534f', weight: 4, opacity: 0.9 }}
+          />
+        )}
       </MapContainer>
 
       {/* Timer oben links */}
