@@ -5,6 +5,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import POIQuestionModal from './POIQuestionModal';
 import Scoreboard from './Scoreboard';
+import './Spielseite.css';
 
 // Leaflet icon fix
 import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
@@ -78,51 +79,43 @@ export default function Spielseite() {
 
   const WASD_STEP = 50;
 
-
   // POIs und deren Fragen laden
-useEffect(() => {
-  const loadPois = async () => {
-    try {
-      const backendBase = 'http://localhost:5000'; // Backend-URL
+  useEffect(() => {
+    const loadPois = async () => {
+      try {
+        const backendBase = 'http://localhost:5000'; // Backend-URL
 
-      console.log('Hole POIs von:', `${backendBase}/api/pois`);
-      const res = await fetch(`${backendBase}/api/pois`);
-      if (!res.ok) throw new Error(`Fehler: ${res.status}`);
-      const data = await res.json();
+        const res = await fetch(`${backendBase}/api/pois`);
+        if (!res.ok) throw new Error(`Fehler: ${res.status}`);
+        const data = await res.json();
 
-      // data.poi ist die Tabelle in der DB
-      const poiArray = data.pois || [];
-      const filtered = shuffle(poiArray).filter(poi => Number(poi.rallye_id) === rallyeId);
+        const poiArray = data.pois || [];
+        const filtered = shuffle(poiArray).filter(poi => Number(poi.rallye_id) === rallyeId);
 
-      // Fragen für jeden POI laden
-      const poisWithQuestions = await Promise.all(
-        filtered.map(async poi => {
-          try {
-            console.log('Hole Fragen für POI', poi.id);
-            const qRes = await fetch(`${backendBase}/api/questions?poi_id=${poi.id}`);
-            if (!qRes.ok) throw new Error(`Fehler: ${qRes.status}`);
-            const qData = await qRes.json();
-            return { ...poi, questions: qData.questions || [] };
-          } catch (err) {
-            console.error(`Fehler beim Laden der Fragen für POI ${poi.id}:`, err);
-            return { ...poi, questions: [] };
-          }
-        })
-      );
+        const poisWithQuestions = await Promise.all(
+          filtered.map(async poi => {
+            try {
+              const qRes = await fetch(`${backendBase}/api/questions?poi_id=${poi.id}`);
+              if (!qRes.ok) throw new Error(`Fehler: ${qRes.status}`);
+              const qData = await qRes.json();
+              return { ...poi, questions: qData.questions || [] };
+            } catch (err) {
+              console.error(`Fehler beim Laden der Fragen für POI ${poi.id}:`, err);
+              return { ...poi, questions: [] };
+            }
+          })
+        );
 
-      console.log('POIs mit Fragen:', poisWithQuestions);
-      setPois(poisWithQuestions);
-      setIndex(0);
-    } catch (err) {
-      console.error('Fehler beim Laden der POIs oder Fragen:', err);
-      setError('POIs konnten nicht geladen werden');
-    }
-  };
+        setPois(poisWithQuestions);
+        setIndex(0);
+      } catch (err) {
+        console.error('Fehler beim Laden der POIs oder Fragen:', err);
+        setError('POIs konnten nicht geladen werden');
+      }
+    };
 
-  loadPois();
-}, [rallyeId]);
-
-
+    loadPois();
+  }, [rallyeId]);
 
   // Timer
   useEffect(() => {
@@ -160,7 +153,7 @@ useEffect(() => {
     positionRef.current = position;
   }, [position]);
 
-  // Push immediately once we have a fresh position (no need to wait up to 30s)
+  // Push immediately once we have a fresh position
   useEffect(() => {
     async function pushOnce() {
       try {
@@ -177,8 +170,6 @@ useEffect(() => {
         if (!resp.ok) {
           const t = await resp.text();
           console.warn('Location upload (immediate) failed', resp.status, t);
-        } else {
-          console.debug('Location upload (immediate) ok');
         }
       } catch (e) {
         console.warn('Location upload (immediate) error', e);
@@ -187,7 +178,7 @@ useEffect(() => {
     pushOnce();
   }, [position]);
 
-  // Periodically upload player coordinates to DB every 30 seconds
+  // Periodically upload player coordinates to DB every 10 seconds
   useEffect(() => {
     let timer = null;
     const rc = params.roomCode || query.get('room') || query.get('roomCode');
@@ -205,15 +196,11 @@ useEffect(() => {
         if (!resp.ok) {
           const t = await resp.text();
           console.warn('Location upload failed', resp.status, t);
-        } else {
-          console.debug('Location upload ok');
         }
       } catch (e) {
-        // best-effort, ignore errors
         console.warn('Location upload error', e);
       }
     }
-    // initial send and then every 10 seconds
     pushLocation();
     timer = setInterval(pushLocation, 10000);
     return () => { if (timer) clearInterval(timer); };
@@ -292,11 +279,11 @@ useEffect(() => {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0 }}>
+    <div className="ss-root">
       <MapContainer
         center={position || (activePoi?.coords || [52.516276, 13.377702])}
         zoom={15}
-        style={{ height: '100%', width: '100%' }}
+        className="ss-map"
         whenCreated={m => mapRef.current = m}
       >
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
@@ -305,41 +292,35 @@ useEffect(() => {
       </MapContainer>
 
       {/* Timer oben links */}
-      <div style={{
-        position: 'absolute',
-        top: 12,
-        left: 12,
-        zIndex: 2000,
-        background: 'rgba(255,255,255,0.95)',
-        padding: '6px 8px',
-        borderRadius: 6,
-        fontWeight: 700,
-        fontFamily: 'monospace'
-      }}>
+      <div className="ss-timer">
         Zeit verbleibend: {formatTime(timeLeft)}
       </div>
 
-      <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 2000 }}>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={toggleMode} style={{ padding: '8px 10px', borderRadius: 6, border: 'none', background: '#0078d4', color: '#fff', cursor: 'pointer' }}>
+      {/* Buttons oben rechts */}
+      <div className="ss-actions">
+        <div className="ss-actions-row">
+          <button onClick={toggleMode} className="ss-btn ss-btn-primary">
             {mode === 'gps' ? 'Modus: GPS' : 'Modus: WASD'}
           </button>
-          <button onClick={async () => {
-            try {
-              const rc = roomCode || query.get('room') || query.get('roomCode');
-              if (rc) await fetch(`/api/rooms/${encodeURIComponent(rc)}/finish`, { method: 'POST' });
-            } catch (e) {
-              console.warn('Failed to notify server to finish session', e);
-            }
-            const gn = groupName || query.get('groupName') || query.get('group');
-            navigate(`/endseite/${encodeURIComponent(roomCode || '')}/${encodeURIComponent(gn || '')}`);
-          }} style={{ padding: '8px 10px', borderRadius: 6, border: 'none', background: '#d9534f', color: '#fff', cursor: 'pointer' }}>
+          <button
+            onClick={async () => {
+              try {
+                const rc = roomCode || query.get('room') || query.get('roomCode');
+                if (rc) await fetch(`/api/rooms/${encodeURIComponent(rc)}/finish`, { method: 'POST' });
+              } catch (e) {
+                console.warn('Failed to notify server to finish session', e);
+              }
+              const gn = groupName || query.get('groupName') || query.get('group');
+              navigate(`/endseite/${encodeURIComponent(roomCode || '')}/${encodeURIComponent(gn || '')}`);
+            }}
+            className="ss-btn ss-btn-danger"
+          >
             Rallye beenden
           </button>
         </div>
       </div>
 
-      {/* Scoreboard other teams (excluding current) */}
+      {/* Scoreboard */}
       <Scoreboard
         roomCode={roomCode || query.get('room') || query.get('roomCode')}
         currentGroupName={groupName || query.get('groupName') || query.get('group')}
@@ -347,13 +328,13 @@ useEffect(() => {
       />
 
       {mode === 'wasd' && (
-        <div style={{ position: 'absolute', bottom: 20, left: 20, zIndex: 2000, background: 'rgba(255,255,255,0.95)', padding: '8px 12px', borderRadius: 8 }}>
-          <b>WASD-Steuerung aktiv:</b> <span style={{ fontFamily: 'monospace' }}>W/A/S/D</span> oder Pfeiltasten bewegen dich auf der Karte.
+        <div className="ss-wasd">
+          <b>WASD-Steuerung aktiv:</b> <span className="ss-mono">W/A/S/D</span> oder Pfeiltasten bewegen dich auf der Karte.
         </div>
       )}
 
       {error && (
-        <div style={{ position: 'absolute', top: 70, left: 12, zIndex: 2000, background: 'rgba(255,255,255,0.95)', padding: '6px 8px', borderRadius: 6, color: 'crimson' }}>
+        <div className="ss-error">
           {error}
         </div>
       )}

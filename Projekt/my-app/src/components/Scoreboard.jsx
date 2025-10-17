@@ -1,4 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import './Scoreboard.css';
 
 // Lightweight scoreboard that polls backend for current session group points
 // Props:
@@ -173,29 +174,24 @@ export default function Scoreboard({ roomCode, currentGroupName, pollMs = 5000 }
   if (!roomCode) return null;
 
   return (
-    <div style={containerStyle}>
-      <div style={headerStyle}>Scoreboard</div>
-      <ul style={listStyle}>
+    <div className="sb">
+      <div className="sb-header">Scoreboard</div>
+      <ul className="sb-list">
         {itemsShown.length === 0 && (
-          <li style={emptyStyle}>Keine Daten</li>
+          <li className="sb-empty">Keine Daten</li>
         )}
         {itemsShown.map((it, idx) => {
-          if (it.__sep) return <li key={it.key} style={separatorStyle} />;
-          const liStyle = rowRowStyle(it);
-          const nameSt = it.isSelf ? { ...nameStyle, fontWeight: 700 } : nameStyle;
-          const ptsSt = it.isSelf ? { ...pointsStyle, fontWeight: 700 } : pointsStyle;
-          const rStyle = rankBadgeStyle(it.rank);
-          const isNumber = it.rank > 3; // Nummer ab Platz 4, sonst Medaille
+          if (it.__sep) return <li key={it.key} className="sb-sep" />;
+          const isNumber = it.rank > 3; // ab Platz 4 Zahl anzeigen, sonst Medaille
           return (
             <li
               key={it.id ?? `row-${idx}`}
-              style={{ ...liStyle, willChange: 'transform' }}
+              className={rowClass(it)}
               ref={setRowRef(it.id)}
             >
-              {/* Eine gemeinsame Rang-Spalte: Medaille (1–3) ODER Zahl (>=4) */}
-              <span style={rStyle}>{isNumber ? `${it.rank}.` : medalForRank(it.rank)}</span>
-              <span style={nameSt}>{it.name}</span>
-              <span style={ptsSt}>{it.points} Punkte</span>
+              <span className="sb-rank">{isNumber ? `${it.rank}.` : medalForRank(it.rank)}</span>
+              <span className="sb-name">{it.name}</span>
+              <span className="sb-points">{it.points} Punkte</span>
             </li>
           );
         })}
@@ -292,4 +288,14 @@ function medalForRank(rank) {
   if (rank === 2) return '🥈';
   if (rank === 3) return '🥉';
   return '';
+}
+
+// Ersetzt: Inline-Styles durch CSS-Klassen
+function rowClass(it) {
+  let cls = 'sb-row';
+  if (it.rank === 1) cls += ' rank-1';
+  else if (it.rank === 2) cls += ' rank-2';
+  else if (it.rank === 3) cls += ' rank-3';
+  if (it.isSelf) cls += ' self';
+  return cls;
 }
