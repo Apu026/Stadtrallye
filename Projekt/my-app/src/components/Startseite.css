@@ -1,0 +1,58 @@
+.start-card {
+  max-width: 400px;
+  margin: 80px auto;
+  background: #fff;
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+
+.start-form { margin-top: 32px; }
+
+.start-input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 10px;
+  margin: 12px 0;
+  font-size: 18px;
+  border-radius: 6px;
+  background: #fff;
+  border: 1.5px solid #083163;
+  color: #222;
+}
+
+.start-error {
+  color: red;
+  margin-bottom: 10px;
+}
+
+.start-submit {
+  width: 100%;
+  padding: 10px;
+  font-size: 18px;
+  border-radius: 6px;
+  background: #083163;
+  color: #fff;
+  border: none;
+  font-weight: 600;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+.start-submit:disabled {
+  background: #555;
+  cursor: not-allowed;
+}
+
+/* Login-Icon */
+.login-icon {
+  cursor: pointer;
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+.login-icon img { width: 40px; height: 40px; }

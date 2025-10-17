@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import LoginModal from './LoginModal';
 import MapBackground from './MapBackground';
 import loginIcon from '../assets/login.svg';
+import './Startseite.css';
 
 const Startseite = ({ onLogin }) => {
   const [showLogin, setShowLogin] = useState(false);
@@ -55,67 +56,37 @@ const Startseite = ({ onLogin }) => {
         className="login-icon"
         aria-label="Login"
         onClick={() => setShowLogin(true)}
-        style={{ cursor: 'pointer', position: 'absolute', top: 20, right: 20, zIndex: 1000 }}
       >
-        <img src={loginIcon} alt="Login" style={{ width: 40, height: 40 }} />
+        <img src={loginIcon} alt="Login" />
       </span>
 
       {showLogin && <LoginModal onClose={() => setShowLogin(false)} onLogin={onLogin} />}
 
-  <div style={{ maxWidth: 400, margin: '80px auto', background: '#fff', borderRadius: 12, padding: 32, boxShadow: '0 4px 16px rgba(0,0,0,0.08)', textAlign: 'center', position: 'relative', zIndex: 2 }}>
+      <div className="start-card">
         <h2>Willkommen zur Stadtrallye!</h2>
         <p>Starte hier deine Rallye und entdecke die Stadt.</p>
 
-        <form onSubmit={handleJoin} style={{ marginTop: 32 }}>
+        <form onSubmit={handleJoin} className="start-form">
           <label htmlFor="roomCode">Raum-Code eingeben:</label>
           <input
             id="roomCode"
             type="text"
             value={roomCode}
             onChange={e => setRoomCode(e.target.value.toUpperCase())}
-            style={{
-              width: '100%',
-              minWidth: 0,
-              boxSizing: 'border-box',
-              padding: 10,
-              margin: '12px 0',
-              fontSize: 18,
-              borderRadius: 6,
-              background: '#fff',
-              border: '1.5px solid #083163',
-              color: '#222'
-            }}
+            className="start-input"
             maxLength={12}
             required
           />
-          {error && <div style={{ color: 'red', marginBottom: 10 }}>{error}</div>}
+          {error && <div className="start-error">{error}</div>}
 
           <button
             type="submit"
-            disabled={loading} // <-- Button deaktiviert während Laden
-            style={{
-              width: '100%',
-              padding: 10,
-              fontSize: 18,
-              borderRadius: 6,
-              background: loading ? '#555' : '#083163',
-              color: '#fff',
-              border: 'none',
-              fontWeight: 600,
-              transition: 'background 0.2s',
-              cursor: loading ? 'not-allowed' : 'pointer'
-            }}
+            disabled={loading}
+            className="start-submit"
           >
             {loading ? 'Überprüfe...' : 'Beitreten'}
           </button>
         </form>
-
-        <button
-          onClick={() => navigate('/spiel')}
-          style={{ padding: "10px 20px", marginTop: "10px", cursor: "pointer" }}
-        >
-          Zur Spielseite
-        </button>
       </div>
     </>
   );
